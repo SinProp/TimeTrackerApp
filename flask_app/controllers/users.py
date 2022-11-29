@@ -38,7 +38,7 @@ def login():
     }
     user_with_email = user.User.get_by_email(data)
     if not user_with_email:
-        flash('Invalid Email/Password Combination', "error")
+        flash('Invalid Email/Password Combination', 'error')
         return redirect('/')
     # user bcrypt to validate the password 
     if not bcrypt.check_password_hash(user_with_email.password, request.form['password']):

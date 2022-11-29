@@ -26,7 +26,7 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated. </p>
             <p>
-            <a href="/create/job" class="btn btn-primary my-2">Add a new IM #</a>
+            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
             <a href="/archive" class="btn btn-secondary my-2">Review Archived IM #'s</a>
             <a href="/logout" class="btn btn-danger my-2">Logout</a>
             </p>
@@ -35,32 +35,36 @@
 
         <div class="album py-5 bg-light">
         <div class="container">
-                <h4 class="mb-3" id='buy'>Active Jobs Board</h4>
-                <form action="/create/band" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
-                    <h2 class="text-primary">Add a New Band</h2>
+                <h4 class="mb-3 center-text" id='buy'>New IM #</h4>
+                <form action="/create/job" method="post" class="center-text form-horizontal p-4 my-4 bg-secondary text-light ">
+                    <h2 class="text-dark text-center">Job Details</h2>
                     
                     
-                    <div class="d-flex justify-content-between col-9">
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="band_name">Band Name:</label>
-                                <input type="text" name="band_name" class="form-control">
+                    <div class="d-flex justify-content-between form-horizontal">
+                        <div class="center-text">
+                            <div class="form-group center-text">
+                                <label for="band_name">IM # (4 Digits)</label>
+                                <input type="text" name="im_number" class="form-control">
                             </div>
-                            <div class="form-group">
+                            <!-- <div class="form-group">
                                 <label for="founding_member"></label>
                                 <input type="hidden" name="founding_member" class="form-control">
+                            </div> -->
+                            <div class="form-group center-text">
+                                <label for="genre">General Contractor:</label>
+                                <input type="text"  name="general_contractor" class="form-control"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label for="genre">Music Genre:</label>
-                                <input type="text"  name=genre class="form-control"></textarea>
+                            <div class="form-group center-text">
+                                <label for="home_city">Job Scope:</label>
+                                <textarea cols="20" rows="5" type="text" name="job_scope" class="form-control"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label for="home_city">Home City:</label>
-                                <input type="text" name="home_city" class="form-control"></textarea>
-                            </div>
+                            <div class="form-group center-text">
+                                <label for="home_city">Estimated Hours:</label>
+                                <input type="text" name="estimated_hours" class="form-control"></textarea>
+                              </div>
+                              <input type="submit" value="Create" class="btn btn-primary">
                         </div>
                             <br>
-                            <input type="submit" value="Create" class="btn btn-primary">
                             </div>
         </div>
         </div>

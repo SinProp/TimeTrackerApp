@@ -26,7 +26,7 @@ def create_job():
         "user_id": session["user_id"]
     }
     Job.save(data)
-    return redirect('/dashboard',jobs = Job.get_all(), user=User.get_by_id(data) )
+    return redirect('/dashboard')
 
 @app.route('/edit/job/<int:id>')
 def edit_job(id):

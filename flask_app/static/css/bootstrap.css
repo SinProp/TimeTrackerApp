@@ -9,6 +9,11 @@
   text-align: center;
 }
 
+.form-horizontal{
+  display:block;
+  width:50%;
+  margin:0 auto;
+}
 .validation-msg {
   color: red;
   
