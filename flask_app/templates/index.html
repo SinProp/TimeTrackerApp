@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Registration</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+    <header>
+        <div class="navbar navbar-dark bg-dark box-shadow">
+        <div class="container d-flex justify-content-between">
+            <a href="#" class="navbar-brand d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
+            <strong>  Time Tracker App by Island Millwork Inc.</strong>
+            </a>
+            
+            </button>
+        </div>
+        </div>
+    </header>
+
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages() %}     
+        <!-- declare a variable called messages -->
+            {% if messages %}                            
+        <!-- check if there are any messages -->
+            {% for message in messages %}            
+        <!-- loop through the messages -->
+            <p class="validation-msg center-text">{{message}}</p>                   
+        <!-- display each message in a paragraph tag -->
+                {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-6 mt-2 mp-2 album py-5 bg-light">
+                <form action="/register" class="center-text" method='POST'>
+                    <h1>Registration</h1>
+                    <div class="form-group">
+                        <label for="first_name" class="form-label">First Name:</label>
+                        <input type="text" name="first_name" id="first_name" class="form-conrol">
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name" class="form-label">Last Name:</label>
+                        <input type="text" name="last_name" id="last_name" class="form-conrol">
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="text" name="email" id="email" class="form-conrol">
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password:</label>
+                        <input type="password" name="password" id="password" class="form-conrol">
+                    </div>
+                    <div class="form-group">
+                        <label for="" class="form-label">Confirm Password:</label>
+                        <input type="password" name="" id="" class="form-conrol">
+                    </div>
+                    <!-- <input type='submit' value='Register'> -->
+                    <button type="submit" class="btn btn-info">Register</button>
+                </form>
+                
+
+
+            </div>
+            <div class="col-6 bg-secondary album py-5 mt-2 mp-2">
+                <form action="/login" class="center-text" method='POST'>
+                    <h1>Employee Login</h1>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="text" name="email" id="email" class="form-conrol">
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password:</label>
+                        <input type="password" name="password" id="password" class="form-conrol">
+                    </div>
+                    <button type="submit" class="btn btn-success">Login</button>
+
+                </form>
+                
+                
+
+
+            </div>
+        </div>
+        <img src="/static/img/IMLOGO.png" class="img rounded mx-auto d-block" alt="Company Logo">
+
+    </div>
+
+</body>
+
+</html>
