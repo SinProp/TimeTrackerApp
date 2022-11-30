@@ -41,6 +41,7 @@
                     <tr>
                         <th>IM #</th>
                         <th>General Contractor</th>
+                        <th>Job Scope</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -49,6 +50,7 @@
                     <tr>
                         <td>{{ job.im_number }}</td>
                         <td>{{ job.general_contractor }}</td>
+                        <td>{{ job.job_scope }}</td>
                         <td> 
                             <a class="btn btn-success" href="/edit/job/{{job.id}}">Edit</a>
                             <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a> 
