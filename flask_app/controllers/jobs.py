@@ -38,7 +38,7 @@ def edit_job(id):
     user_data = {
         "id":session['user_id']
     }
-    return render_template("edit_job.html",edit = Job.get_one(data),user=User.get_by_id(user_data))
+    return render_template("edit_job.html",job = Job.get_one(data),user=User.get_by_id(user_data))
 
 
 @app.route('/update/job',methods=['POST'])
@@ -46,9 +46,9 @@ def update_job():
     if 'user_id' not in session:
         return redirect('/logout')
     if not Job.validate_job(request.form):
-        return redirect('/new/job')
+        return redirect(f'/update/job/{{job.id}}')
     data = {
-        "im_number": request.form["im_number"],
+        # "im_number": request.form["im_number"],
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],

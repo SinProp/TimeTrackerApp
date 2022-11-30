@@ -25,7 +25,7 @@
           <div class="container">
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p>
-              <a href="#buy" class="btn btn-primary my-2">Add a new IM #</a>
+              <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
               <a href="/fruits" class="btn btn-secondary my-2">Review Archived IM #'s</a>
             </p>
           </div>
@@ -35,28 +35,28 @@
           <div class="container">
                 
                 
-                <form action="/update/band" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
-                    <h4 class="mb-3" id='buy'>Edit Job IM{{job.im_number}}</h4>
+                <form action="/update/job" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
+                    <h4 class="mb-3" id='buy'>Edit Job IM {{job.im_number}}</h4>
             
                     
-                            <input type="hidden" name="id" value={{session.user_id}}>
+                            <input type="hidden" name="id" value={{job.id}}>
                             <div class="form-group">
-                                <label for="band_name">General Contractor:</label>
-                                <input type="text" name="general_contractor" class="form-control" value="{{edit.general_contractor}}">
+                                <label for="general_contractor">General Contractor:</label>
+                                <input type="text" name="general_contractor" class="form-control" value="{{job.general_contractor}}">
                             </div>
                             <div class="form-group">
                                 <label for="genre">Job Scope:</label>
-                                <input type="text" name="job_scope" class="form-control" value="{{edit.job_scope}}">
+                                <input type="text" name="job_scope" class="form-control" value="{{job.job_scope}}">
                             </div>
                             <div class="form-group">
                                 <label for="home_city">Estimated Hours:</label>
-                                <input type="text" name="estimated_hours"  class="form-control" value="{{edit.estimated_hours}}">
+                                <input type="text" name="estimated_hours"  class="form-control" value="{{job.estimated_hours}}">
                             </div>
+                            <input type="submit" value="Update Job" class="btn btn-primary">
                         </div>
                         <div class="col-4">
             
                             
-                            <input type="submit" value="Update Job" class="btn btn-primary">
                             
                         </div>
                     

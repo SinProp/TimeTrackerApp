@@ -52,7 +52,7 @@ class Job:
 
     @classmethod
     def update(cls, data):
-        query = "UPDATE jobs SET im_number=%(im_number)s, general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, estimated_hours=%(estimated_hours)s, updated_at = NOW() WHERE id = %(id)s;"
+        query = "UPDATE jobs SET general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, estimated_hours=%(estimated_hours)s, updated_at = NOW() WHERE id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query,data)
 
     @classmethod
@@ -84,9 +84,9 @@ class Job:
     @staticmethod
     def validate_job(job):
         is_valid = True
-        if len(job['im_number']) < 4:
-            is_valid = False
-            flash("IM Numbers must be at least 4 digits","job")
+        # if len(job['im_number']) < 4:
+        #     is_valid = False
+        #     flash("IM Numbers must be at least 4 digits","job")
         if len(job['general_contractor']) < 3:
             is_valid = False
             flash("GC names must be at least 3 characters","job")
