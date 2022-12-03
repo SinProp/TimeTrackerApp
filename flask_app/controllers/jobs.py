@@ -48,7 +48,6 @@ def update_job():
     if not Job.validate_job(request.form):
         return redirect(f'/update/job/{{job.id}}')
     data = {
-        # "im_number": request.form["im_number"],
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],

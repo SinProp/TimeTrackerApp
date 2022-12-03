@@ -1,21 +1,19 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 from ..models import user
+from ..models import job
 
-class Job:
+class Shift:
     db_name = 'man_hours'
 
     def __init__(self,db_data):
         self.id = db_data['id']
-        self.im_number = db_data['im_number']
-        self.general_contractor = db_data['general_contractor']
-        self.job_scope = db_data['job_scope']
-        self.estimated_hours = db_data['estimated_hours']
+        self.created_at = db_data['created_at']
+        self.shift_start = db_data['shift_start']
+        self.shift_end = db_data['shift_end']
         self.user = None
         self.user_id = db_data['user_id']
-        self.created_at = db_data['created_at']
         self.updated_at = db_data['updated_at']
-
 
     @classmethod
     def save(cls,data):
