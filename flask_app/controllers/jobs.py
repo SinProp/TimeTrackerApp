@@ -56,8 +56,8 @@ def update_job():
     Job.update(data)
     return redirect('/dashboard')
 
-@app.route('/job/show')
-def show_all_jobs():
+@app.route('/show/job/<int:id>')
+def get_one(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
@@ -66,7 +66,7 @@ def show_all_jobs():
     user_data = {
         "id": session['user_id']
     }
-    return render_template("my_jobs.html",jobs = Job.get_all(),user=User.get_by_id(user_data))
+    return render_template("view_job.html",job = Job.get_one(data),user=User.get_by_id(user_data))
 
 @app.route('/destroy/job/<int:id>')
 def destroy_job(id):

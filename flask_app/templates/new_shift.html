@@ -35,8 +35,16 @@
 
         <div class="album py-5 bg-light">
         <div class="container">
-                <h4 class="mb-3 center-text" id='buy'>New Shift for {{job.im_number}}</h4>
+                <h4 class="mb-3 center-text" id='buy'>New Shift for: {{ job.im_number }}</h4>
                             <br>
+        <div class="container text-center">
+          <form action="/create/shift" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
+                <!-- <a href="/create/shift" class="btn btn-primary my-2 center-text">Start Shift</a> -->
+          
+                <input type="submit" value="Punch In!" class="btn btn-primary">
+
+              </div>
+          </form>
                             </div>
         </div>
         </div>

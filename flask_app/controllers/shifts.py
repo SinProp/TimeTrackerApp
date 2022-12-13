@@ -4,25 +4,28 @@ from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
 
-@app.route('/add/shift')
-def new_shift():
+@app.route('/add/shift/<int:id>')
+def new_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
         "id":session['user_id']
     }
-    return render_template('new_shift.html', logged_in_user = User.get_by_id(data))
+    job_data = {
+        "id": id
+    }
+    
+    return render_template('new_shift.html', job = Job.get_one(job_data), logged_in_user = User.get_by_id(data))
 
 @app.route('/create/shift',methods=['POST'])
 def create_shift():
     if 'user_id' not in session:
         return redirect('/logout')
-    if not Job.validate_job(request.form):
+    if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
     data = {
-        "shift start": request.form["shift_start"],
-        "shift_end": request.form["shift_end"],
-        "user_id": session["user_id"]
+        
+        "user_id": session["user_id"],
     }
     Shift.save(data)
     return redirect('/dashboard')
