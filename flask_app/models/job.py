@@ -44,6 +44,20 @@ class Job:
         return all_jobs
     
     @classmethod
+    def get_job_with_shifts(cls,data):
+        query = "SELECT * FROM jobs LEFT JOIN hourly_shifts ON hourlyshifts.job_id = jobs.id LEFT JOIN shifts ON hourly_shifts.shift_id = shifts.id where jobs.id = %(id)s; "
+        results = connectToMySQL('jobs').query_db( query , data )
+        job = cls( results[0] )
+        for row_from_db in results:
+            shift_data = {
+                "id" : row_from_db["shifts.id"],
+                "created_at" : row_from_db["shifts.created_at"],
+                "updated_at" : row_from_db["shifts.updated_at"]
+            }
+            job.shifts.append(shift.Shift( shift_data ))
+            return job
+
+    @classmethod
     def get_one(cls,data):
         query = "SELECT * FROM jobs WHERE id = %(id)s;"
         results = connectToMySQL(cls.db_name).query_db(query,data)

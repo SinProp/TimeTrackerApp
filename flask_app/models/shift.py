@@ -8,15 +8,14 @@ class Shift:
 
     def __init__(self,db_data):
         self.id = db_data['id']
+        self.job_shifts = []
         self.created_at = db_data['created_at']
         self.updated_at = db_data['updated_at']
-        self.user = None
-        self.user_id = db_data['user_id']
-        self.job_id = db_data['job_id']
+        
 
     @classmethod
     def save(cls,data):
-        query = "INSERT INTO shifts (job_id) VALUES (%(job_id)s);"
+        query = "INSERT INTO shifts (created_at, updated_at, job_id) VALUES (NOW(),NOW(),%(job_id)s);"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
@@ -31,7 +30,7 @@ class Shift:
                 'general_contractor': row['general_contractor'],
                 'job_scope': row['job_scope'],
                 'estimated_hours': row['estimated_hours'],
-                'job_id': row['job_id'],
+                'user_id': row['user_id'],
                 'created_at': row['jobs.created_at'],
                 'updated_at': row['jobs.updated_at'],
             }

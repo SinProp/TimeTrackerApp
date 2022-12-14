@@ -10,6 +10,7 @@ def new_shift(id):
         return redirect('/logout')
     data = {
         "id":session['user_id']
+        
     }
     job_data = {
         "id": id
@@ -23,11 +24,8 @@ def create_shift():
         return redirect('/logout')
     if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
-    data = {
-        
-        "user_id": session["user_id"],
-    }
-    Shift.save(data)
+    
+    Shift.save(request.form)
     return redirect('/dashboard')
 
 @app.route('/edit/shift/<int:id>')

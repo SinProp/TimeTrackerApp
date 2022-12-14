@@ -37,10 +37,11 @@
         <div class="container">
                 <h4 class="mb-3 center-text" id='buy'>New Shift for: {{ job.im_number }}</h4>
                             <br>
+                <h3>{{ logged_in_user.first_name }}</h3>
         <div class="container text-center">
           <form action="/create/shift" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
                 <!-- <a href="/create/shift" class="btn btn-primary my-2 center-text">Start Shift</a> -->
-          
+                <input name="job_id" type="hidden" value="{{ job.id }}">
                 <input type="submit" value="Punch In!" class="btn btn-primary">
 
               </div>
