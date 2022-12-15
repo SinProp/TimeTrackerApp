@@ -32,7 +32,7 @@
         </section>
   
         <div class="album py-5 bg-light">
-          <div class="container">
+          <div class="container text-center">
                 
             <a href="/add/shift/{{job.id}}" class="btn btn-primary my-2">Add a new Shift</a>
 
@@ -53,23 +53,23 @@
                             <!-- <input type="submit" value="Create a Shift" class="btn btn-primary"> -->
 
                             <br>
-                            {% for shift in shifts %}
-                            {% if shift.job_id == job_id %}
+                            {% for shifts in thisJob.shifts %}
+                            {% if shifts.job_id == job.id %}
 
-                            <table class ="table table-hover" >
+                            <table class ="table table-hover text-center" >
                               <thead>
                                 <tr>
                                     <th>Started Shift</th>
                                     <th>Ended Shift</th>
 
-                                    
+
                                     <th>Hours Worked</th>
                                 </tr>
                               </thead>
                               <tbody>
                                   <tr>
-                                      <td>{{ shift.created_at }}</td>
-                                      <td>{{ shift.updated_at }}</td>
+                                      <td>{{ shifts.created_at.strftime(dtf) }}</td>
+                                      <td>{{ shifts.updated_at.strftime(dtf) }}</td>
 
 
                                       <td>Shift Totals Here</td>

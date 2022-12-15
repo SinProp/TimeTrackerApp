@@ -11,6 +11,8 @@ class Shift:
         self.job_shifts = []
         self.created_at = db_data['created_at']
         self.updated_at = db_data['updated_at']
+        self.job_id = db_data['job_id']
+        self.user_id = db_data['user_id']
         
 
     @classmethod
@@ -19,7 +21,7 @@ class Shift:
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
-    def get_all_shifts(cls):
+    def get_all_shifts(cls, data):
         query = "SELECT * FROM shifts LEFT JOIN jobs on jobs.id = job_id;"
         results =  connectToMySQL(cls.db_name).query_db(query)
         all_shifts = []

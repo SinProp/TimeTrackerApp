@@ -1,6 +1,6 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
-from ..models import user
+from ..models import user, shift
 
 class Job:
     db_name = 'man_hours'
@@ -15,6 +15,7 @@ class Job:
         self.user_id = db_data['user_id']
         self.created_at = db_data['created_at']
         self.updated_at = db_data['updated_at']
+        self.shifts = []
 
 
     @classmethod
@@ -43,19 +44,21 @@ class Job:
             all_jobs.append(new_job)
         return all_jobs
     
-    @classmethod
-    def get_job_with_shifts(cls,data):
-        query = "SELECT * FROM jobs LEFT JOIN hourly_shifts ON hourlyshifts.job_id = jobs.id LEFT JOIN shifts ON hourly_shifts.shift_id = shifts.id where jobs.id = %(id)s; "
-        results = connectToMySQL('jobs').query_db( query , data )
-        job = cls( results[0] )
-        for row_from_db in results:
-            shift_data = {
-                "id" : row_from_db["shifts.id"],
-                "created_at" : row_from_db["shifts.created_at"],
-                "updated_at" : row_from_db["shifts.updated_at"]
-            }
-            job.shifts.append(shift.Shift( shift_data ))
-            return job
+    # @classmethod
+    # def get_job_with_shifts(cls,data):
+    #     query = "SELECT * FROM jobs LEFT JOIN hourly_shifts ON hourlyshifts.job_id = jobs.id LEFT JOIN shifts ON hourly_shifts.shift_id = shifts.id where jobs.id = %(id)s; "
+    #     results = connectToMySQL(cls.db_name).query_db( query , data )
+
+    #     job = cls( results[0] )
+    #     for row_from_db in results:
+    #         shift_data = {
+    #             "id" : row_from_db["shifts.id"],
+    #             "created_at" : row_from_db["shifts.created_at"],
+    #             "updated_at" : row_from_db["shifts.updated_at"],
+    #             "job_id" : row_from_db["shifts.job_id"]    
+    #         }
+    #         job.shifts.append(shift.Shift( shift_data ))
+    #         return job
 
     @classmethod
     def get_one(cls,data):
@@ -90,6 +93,32 @@ class Job:
             new_job.user = user.User(user_data)
             all_jobs.append(new_job)
         return all_jobs
+
+    @classmethod
+    def getJobWithShifts(cls, data):
+        query = '''
+            SELECT * 
+            FROM jobs
+            LEFT JOIN shifts
+            ON jobs.id = shifts.job_id
+            WHERE jobs.id = %(id)s;'''
+        results = connectToMySQL(cls.db_name).query_db(query, data)
+        print(f"results: {results}")
+        output = cls(results[0])
+        if not results[0]['shifts.id'] == None:
+            for row in results:
+            # print(row)
+                shift_info = {
+                    'id' : row['shifts.id'],
+                    'created_at' : row['created_at'],
+                    'updated_at' : row['updated_at'],
+                    'job_id' : row['job_id'],
+                    'user_id' : row['user_id']
+                }
+                output.shifts.append(shift.Shift(shift_info))
+                print(f"output: {output}")
+                print(f"output.shifts: {output.shifts}")
+            return output
 
     @classmethod
     def destroy(cls, data):

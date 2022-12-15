@@ -3,6 +3,8 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
+from datetime import datetime
+dateFormat = "%m/%d/%Y %I:%M %p"
 
 @app.route('/new/job')
 def new_job():
@@ -64,11 +66,15 @@ def get_one(id):
     data = {
         "id":id
     }
+    
     user_data = {
         "id": session['user_id']
     }
     
-    return render_template("view_job.html", shifts = Shift.get_all_shifts(), job = Job.get_one(data),user=User.get_by_id(user_data))
+    return render_template("view_job.html",
+    thisJob = Job.getJobWithShifts(data),
+    dtf = dateFormat,
+    job = Job.get_one(data))
 
 @app.route('/destroy/job/<int:id>')
 def destroy_job(id):
