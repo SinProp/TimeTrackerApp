@@ -41,7 +41,9 @@ def edit_job(id):
     user_data = {
         "id":session['user_id']
     }
-    return render_template("edit_job.html",job = Job.get_one(data),user=User.get_by_id(user_data))
+    return render_template("edit_job.html",
+    job = Job.get_one(data),
+    user=User.get_by_id(user_data))
 
 
 @app.route('/update/job',methods=['POST'])
@@ -65,16 +67,19 @@ def get_one(id):
         return redirect('/logout')
     data = {
         "id":id
+        
     }
     
     user_data = {
         "id": session['user_id']
     }
     
+
     return render_template("view_job.html",
     thisJob = Job.getJobWithShifts(data),
     dtf = dateFormat,
-    job = Job.get_one(data))
+    job = Job.get_one(data),
+    user = User.get_by_id(user_data))
 
 @app.route('/destroy/job/<int:id>')
 def destroy_job(id):

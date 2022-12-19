@@ -41,15 +41,14 @@ def edit_shift(id):
     return render_template("edit_shift.html",job = Job.get_one(data),user=User.get_by_id(user_data))
 
 
-@app.route('/update/shift',methods=['POST'])
-def update_shift():
+@app.route('/update/shift/<int:id>',methods=['POST'])
+def update_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
-    if not Job.validate_job(request.form):
-        return redirect(f'/update/shift/{{shift.id}}')
+    if not Shift.validate_shift(request.form):
+        return redirect(f'/update/shift/{{shifts.id}}')
     data = {
-        "shift start": request.form["shift_start"],
-        "shift_end": request.form["shift_end"],
+        
         "id": request.form['id']
     }
     Shift.update(data)

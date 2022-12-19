@@ -42,6 +42,8 @@
           <form action="/create/shift" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
                 <!-- <a href="/create/shift" class="btn btn-primary my-2 center-text">Start Shift</a> -->
                 <input name="job_id" type="hidden" value="{{ job.id }}">
+                <input name="user_id" type="hidden" value="{{ logged_in_user.id }}">
+                
                 <input type="submit" value="Punch In!" class="btn btn-primary">
 
               </div>

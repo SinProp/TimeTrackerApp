@@ -110,8 +110,8 @@ class Job:
             # print(row)
                 shift_info = {
                     'id' : row['shifts.id'],
-                    'created_at' : row['created_at'],
-                    'updated_at' : row['updated_at'],
+                    'created_at' : row['shifts.created_at'],
+                    'updated_at' : row['shifts.updated_at'],
                     'job_id' : row['job_id'],
                     'user_id' : row['user_id']
                 }
@@ -119,6 +119,24 @@ class Job:
                 print(f"output: {output}")
                 print(f"output.shifts: {output.shifts}")
             return output
+
+    # @classmethod
+    # def time_diff( cls, data ):
+    #     query = ''' 
+    #         SELECT TIMESTAMPDIFF (HOUR, created_at, updated_at) 
+    #         FROM shifts 
+    #         '''
+    #     results = connectToMySQL(cls.db_name).query_db(query, data)
+    #     output = cls(results[0])
+    #     for row in results
+    #         duration_data = {
+                    # 'id' : row['shifts.id'],
+                    # 'job_id' : row['job_id'],
+                    # 'user_id' : row['user_id'],
+                    # 'shift duration' : row['shift_duration'],
+    #         }
+
+
 
     @classmethod
     def destroy(cls, data):

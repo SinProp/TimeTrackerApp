@@ -61,24 +61,35 @@
                                 <tr>
                                     <th>Started Shift</th>
                                     <th>Ended Shift</th>
+                            
 
 
                                     <th>Hours Worked</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                  <tr>
-                                      <td>{{ shifts.created_at.strftime(dtf) }}</td>
-                                      <td>{{ shifts.updated_at.strftime(dtf) }}</td>
-
-
-                                      <td>Shift Totals Here</td>
-                                  </tr>
+                                <tr>
+                                  <td>{{ shifts.created_at }}</td>
+                                  <td>{{ shifts.updated_at }}</td>
+                                  
+                                  
+                                  <td>Shift Totals Here</td>
+                                </tr>
                               </tbody>
                             </table>
+                            
+                            <tr>
+                              {% if shifts.user_id == session.user_id %}
+                              <form action="/update/shift/{{ shifts.id }}" method="post">            
+                              <input type="submit"  value="Punch Out!" class="btn btn-primary">
+                              <input type="hidden" name="id" value="{{ shifts.id }}">
+                              </form> 
+                              {% endif %}
+                            </tr>
+
                             {% endif %}
                             {% endfor %}
-
+                            <!-- <p>{{ session.user_id }}</p> -->
                         </div>
                         <div class="col-4">
             
