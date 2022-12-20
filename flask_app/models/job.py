@@ -101,6 +101,8 @@ class Job:
             FROM jobs
             LEFT JOIN shifts
             ON jobs.id = shifts.job_id
+            JOIN users
+            ON shifts.user_id = users.id
             WHERE jobs.id = %(id)s;'''
         results = connectToMySQL(cls.db_name).query_db(query, data)
         print(f"results: {results}")
@@ -115,7 +117,20 @@ class Job:
                     'job_id' : row['job_id'],
                     'user_id' : row['user_id']
                 }
-                output.shifts.append(shift.Shift(shift_info))
+                user_info = {
+                    'id' : row['id'],
+                    'first_name' : row['first_name'],
+                    'last_name' : row['last_name'],
+                    'email' : row['email'],
+                    'password' : row['password'],
+                    'created_at' : row['users.created_at'],
+                    'updated_at' : row['users.updated_at']
+                    }
+                
+                this_shift = shift.Shift(shift_info)
+                this_shift.creator = user.User(user_info)
+                output.shifts.append(this_shift) 
+
                 print(f"output: {output}")
                 print(f"output.shifts: {output.shifts}")
             return output

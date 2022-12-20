@@ -13,6 +13,8 @@ class Shift:
         self.updated_at = db_data['updated_at']
         self.job_id = db_data['job_id']
         self.user_id = db_data['user_id']
+        self.creator = None
+
         
 
     @classmethod
