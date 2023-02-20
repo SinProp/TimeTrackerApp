@@ -1,0 +1,99 @@
+<html>
+<body>
+<head>
+    <title>View User Shifts</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
+        <div class="container text-center ">
+            <a href="#" class="navbar-brand align-items-center">
+                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
+            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+            </a>
+        </div>
+        </div>
+    </header>
+
+    <main role="main">
+
+        <section class="jumbotron text-center">
+        <div class="container">
+            <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
+            <p>
+            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
+            <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
+            </p>
+        </div>
+        </section>
+
+        <div class="album py-5 bg-light">
+        <div class="container text-center">
+                
+
+                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->
+                    <h4 class="mb-3" id='buy'>{{user.first_name}}'s Shifts</h4>
+
+                    <!-- <div class="form-group">
+                            </div> -->
+                            <!-- <input type="submit" value="Create a Shift" class="btn btn-primary"> -->
+
+                            <br>
+                            {% for shifts in thisShift.shifts %}
+                            {% if user.id == shifts.creator.id %}
+
+                            <table class ="table table-hover text-center" >
+                            <thead>
+                                <tr>
+                                <th>Employee</th>
+                                <th>Started Shift</th>
+                                <th>Ended Shift</th>
+                            
+
+
+                                    <th>Hours Worked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                <td>{{ shifts.creator.first_name }}</td>
+                                <td>{{ shifts.created_at }}</td>
+                                <td>{{ shifts.updated_at }}</td>
+                                
+                                
+                                <td>Shift Totals Here</td>
+                                </tr>
+                            </tbody>
+                            </table>
+                            
+                            <tr>
+                            <form action="/update/shift/{{ shifts.id }}" method="post">            
+                            {% if shifts.creator.first_name == user.first_name %}
+                            <input type="submit"  value="Punch Out!" class="btn btn-primary">
+                            <input type="hidden" name="id" value="{{ shifts.id }}">
+                            {% endif %}
+                            </form> 
+                            </tr>
+
+                            {% endif %}
+                            {% endfor %}
+                            <!-- <p>{{ session.user_id }}</p> -->
+                        </div>
+                        <div class="col-4">
+            
+                            
+                            
+                        </div>
+                    
+                <!-- </form> -->
+                
+            
+        </div>
+        </div>
+
+    </main>
+    
+</body>
+</html>

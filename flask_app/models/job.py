@@ -1,6 +1,9 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 from ..models import user, shift
+from datetime import datetime
+dateFormat = "%m/%d/%Y %I:%M %p"
+
 
 class Job:
     db_name = 'man_hours'
@@ -33,6 +36,7 @@ class Job:
                 'id': row['id'],
                 'first_name': row['first_name'],
                 'last_name': row['last_name'],
+                'department': row['department'],
                 'email': row['email'],
                 'password': row['password'],
                 'user_id': row['user_id'],
@@ -97,7 +101,8 @@ class Job:
     @classmethod
     def getJobWithShifts(cls, data):
         query = '''
-            SELECT * 
+
+            SELECT *, TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
             FROM jobs
             LEFT JOIN shifts
             ON jobs.id = shifts.job_id
@@ -114,6 +119,7 @@ class Job:
                     'id' : row['shifts.id'],
                     'created_at' : row['shifts.created_at'],
                     'updated_at' : row['shifts.updated_at'],
+                    'elapsed_time': row['elapsed_time'],
                     'job_id' : row['job_id'],
                     'user_id' : row['user_id']
                 }
@@ -123,8 +129,9 @@ class Job:
                     'last_name' : row['last_name'],
                     'email' : row['email'],
                     'password' : row['password'],
+                    'department' : row['department'],
                     'created_at' : row['users.created_at'],
-                    'updated_at' : row['users.updated_at']
+                    'updated_at' : row['users.updated_at'],
                     }
                 
                 this_shift = shift.Shift(shift_info)

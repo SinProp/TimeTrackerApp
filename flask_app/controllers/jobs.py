@@ -67,14 +67,12 @@ def get_one(id):
         return redirect('/logout')
     data = {
         "id":id
-        
     }
     
     user_data = {
         "id": session['user_id']
     }
     
-
     return render_template("view_job.html",
     thisJob = Job.getJobWithShifts(data),
     dtf = dateFormat,

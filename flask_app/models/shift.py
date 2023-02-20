@@ -2,6 +2,8 @@ from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 from ..models import user
 from ..models import job
+dateFormat = "%m/%d/%Y %I:%M %p"
+
 
 class Shift:
     db_name = 'man_hours'
@@ -14,7 +16,11 @@ class Shift:
         self.job_id = db_data['job_id']
         self.user_id = db_data['user_id']
         self.creator = None
+        self.elapsed_time = db_data['elapsed_time']
 
+    def elapsed_time(self):
+        elapsed = self.updated_at - self.created_at
+        return str(elapsed)
         
 
     @classmethod
@@ -55,6 +61,12 @@ class Shift:
     def update(cls, data):
         query = "UPDATE shifts SET updated_at = NOW() WHERE id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query,data)
+
+    @classmethod
+    def elapsed_time(cls,data):
+        query = "SELECT TIMESTAMPDIFF (HOUR, created_at, updated_at) as elapsed_time FROM shifts;"
+        return connectToMySQL(cls.db_name).query_db(query,data)
+
 
     # @classmethod
     # def show_all_jobs(cls):

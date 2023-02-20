@@ -20,6 +20,7 @@ def register():
         'first_name': request.form['first_name'],
         'last_name': request.form['last_name'],
         'email': request.form['email'],
+        'department': request.form['department'],
         'password': pw_hash
     }
 

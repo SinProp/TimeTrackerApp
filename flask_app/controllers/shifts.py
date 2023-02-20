@@ -3,6 +3,8 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
+dateFormat = "%m/%d/%Y %I:%M %p"
+
 
 @app.route('/add/shift/<int:id>')
 def new_shift(id):
@@ -65,6 +67,25 @@ def show_all_shifts():
         "id": session['user_id']
     }
     return render_template("see_shifts.html",shifts = Shift.get_all(),user=User.get_by_id(user_data))
+
+
+@app.route('/user/shifts/<int:id>')
+def show_user_shifts(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    data = {
+        "id":id
+    }
+    
+    user_data = {
+        "id": session['user_id']
+    }
+    
+    return render_template("viewUserShifts.html",
+    thisShift = User.getUserWithShifts(data),
+    dtf = dateFormat,
+    user = User.get_by_id(user_data))
+
 
 @app.route('/destroy/shift/<int:id>')
 def destroy_shift(id):
