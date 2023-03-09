@@ -37,73 +37,88 @@
                 
             <!-- <a href="/add/shift/{{job.id}}" class="btn btn-primary my-2">Add a new Shift</a> -->
 
-                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->
-                    <h4 class="mb-3" id='buy'> Job IM {{job.im_number}}</h4>
-            
+                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
                     
-                            <input type="hidden" name="id" value={{job.id}}>
-                            <div class="form-group">
-                                <label for="general_contractor">General Contractor: {{job.general_contractor}}</label>
-                            </div>
-                            <div class="form-group">
-                                <label for="job_scope">Job Scope: {{job.job_scope}}</label>
-                            </div>
-                            <!-- <div class="form-group">
-                                <label for="home_city">Estimated Hours: {{job.estimated_hours}}</label>
-                            </div> -->
-                            <!-- <input type="submit" value="Create a Shift" class="btn btn-primary"> -->
+                    <h4 class="mb-3" id='buy'> Job IM {{job.im_number}}</h4>
 
-                            <br>
+                    {% set shifts_by_department = {} %}
+                    {% set department_elapsed_times = {} %}
+                    
+                    {% for shifts in thisJob.shifts %}
+                        {% if shifts.job_id == job.id %}
+                            {% set department = shifts.creator.department %}
+                            {% set shifts_for_department = shifts_by_department.setdefault(department, []) %}
+                            {% set shifts_for_department = shifts_for_department.append(shifts) %}
+                        {% endif %}
+                    {% endfor %}
 
-                            <table class ="table table-hover text-center" >
-                              <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Department</th>
-                                    <th>Started Shift</th>
-                                    <th>Ended Shift</th>
-                                    <th>Elapsed Time</th>
-                                    <th>Punch Out </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {% for shifts in thisJob.shifts %}
-                                {% if shifts.job_id == job.id %}
+                    {% for department, shifts in shifts_by_department.items() %}
+                    <!-- table header and rows for each shift -->
+                      <h5>{{ department }}</h5>
+                    
+                    <table class="table table-hover text-center">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Department</th>
+                          <th>Started Shift</th>
+                          <th>Ended Shift</th>
+                          <th>Elapsed Time</th>
+                          <th>Punch Out </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                        {% for shift in shifts %}
+                          {% if shift.elapsed_time is not none %}
+                            {% set elapsed_time_seconds = shift.elapsed_time.total_seconds() %}
+                          {% else %}
+                            {% set elapsed_time_seconds = 0 %}
+                        {% endif %}
 
-                                  <tr>
-                                      <td>{{ shifts.creator.first_name }}</td>
-                                      <td>{{ shifts.creator.department }}</td>
-                                      <td>{{ shifts.created_at }}</td>
-                                      <td>{{ shifts.updated_at }}</td>
-                                      <td>{{ shifts.elapsed_time }}</td>
-                                      
-                                      <td>
-                                          {% if shifts.creator.first_name == user.first_name %}
-                                              {% if shifts.updated_at %}
+                        {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
+                        {% set department_elapsed_times = department_elapsed_times.update({department: department_elapsed_time + elapsed_time_seconds}) %}      
+                              <tr>
+                                  <td>{{ shift.creator.first_name }}</td>
+                                  <td>{{ shift.creator.department }}</td>
+                                  <td>{{ shift.created_at }}</td>
+                                  <td>{{ shift.updated_at }}</td>
+                                  <td>{{ shift.elapsed_time }}</td>
+                                  <td>
+                                          {% if shift.creator.first_name == user.first_name %}
+                                              {% if shift.updated_at %}
                                                   Already Ended
                                               {% else %}
-                                                  <form action="/update/shift/{{ shifts.id }}" method="post">
+                                                  <form action="/update/shift/{{ shift.id }}" method="post">
                                                       <button type="submit" class="btn btn-primary">Punch Out!</button>
-                                                      <input type="hidden" name="id" value="{{ shifts.id }}">
+                                                      <input type="hidden" name="id" value="{{ shift.id }}">
                                                   </form>
                                               {% endif %}
                                           {% else %}
                                               Not authorized
                                           {% endif %}
-                                      </td>
-                                  </tr>
-                                  
-                              {% endif %}
+                                      </td>      
+                              </tr>
                               {% endfor %}
-                              </tbody>
-                            </tr>
-                            </table>
-
-                            <!-- <p>{{ session.user_id }}</p> -->
-                        </div>
-                        <div class="col-4">
-            
-                            
+                              <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><strong>Total Elapsed Time:</strong></td>
+                                
+                                <td>
+                                      <strong>
+                                          {{ department_elapsed_times[department] // 3600 }} hours,
+                                          {{ (department_elapsed_times[department] // 60) % 60 }} minutes,
+                                          {{ department_elapsed_times[department] % 60 }} seconds
+                                      </strong>
+                                </td>
+                                <td></td>
+                            </tr>   
+                          </tbody>
+                        </table>
+                        
+                    {% endfor %}                            
                             
                         </div>
                     
