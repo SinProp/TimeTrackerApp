@@ -39,7 +39,9 @@
 
                 <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
                     
-                    <h4 class="mb-3" id='buy'> Job IM {{job.im_number}}</h4>
+                    <h4 class="mb-3" id='buy'> Job IM: *{{job.im_number}}*</h4>
+                    <h4 class="mb-3" id='buy'> Client: {{job.general_contractor}}</h4>
+                    <br/>
 
                     {% set shifts_by_department = {} %}
                     {% set department_elapsed_times = {} %}
@@ -104,10 +106,10 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td><strong>Total Elapsed Time:</strong></td>
+                                <td ><strong style="color: #339933;">Total Elapsed Time:</strong></td>
                                 
                                 <td>
-                                      <strong>
+                                      <strong style="color: #339933;">
                                           {{ department_elapsed_times[department] // 3600 }} hours,
                                           {{ (department_elapsed_times[department] // 60) % 60 }} minutes,
                                           {{ department_elapsed_times[department] % 60 }} seconds

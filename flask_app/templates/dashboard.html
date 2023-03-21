@@ -26,11 +26,13 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated. </p>
             <p>
+              {% if logged_in_user.department == 'ADMINISTRATIVE' %}
               <a href="/new/job" class="btn btn-primary my-2">Add a new IM #</a>
-              
+              {% endif %}
+
               <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
               <!-- <a href="/fruits" class="btn btn-secondary my-2">Review Archived IM #'s</a> -->
-              <a href="/user/shifts/{{ logged_in_user.id }}" class="btn btn-secondary my-2">My Shifts</a>
+              <!-- <a href="/user/shifts/{{ logged_in_user.id }}" class="btn btn-secondary my-2">My Shifts</a> -->
               <a href="/logout" class="btn btn-danger my-2">Logout</a>
             </p>
             <br>

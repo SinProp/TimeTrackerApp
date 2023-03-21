@@ -43,3 +43,5 @@ class MySQLConnection:
 def connectToMySQL(db):
     return MySQLConnection(db)
 
+
+
