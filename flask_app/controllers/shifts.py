@@ -40,7 +40,7 @@ def edit_shift(id):
     user_data = {
         "id":session['user_id']
     }
-    return render_template("edit_shift.html",job = Job.get_one(data),user=User.get_by_id(user_data))
+    return render_template("edit_shift.html",shift = Shift.get_one_shift(data),user=User.get_by_id(user_data))
 
 
 @app.route('/update/shift/<int:id>',methods=['POST'])
@@ -51,7 +51,8 @@ def update_shift(id):
         return redirect(f'/update/shift/{{shifts.id}}')
     data = {
         
-        "id": request.form['id']
+        "id": request.form['id'],
+
     }
     Shift.update(data)
     return redirect('/dashboard')

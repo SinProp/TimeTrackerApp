@@ -1,0 +1,76 @@
+<html>
+<body>
+<head>
+    <title>Edit Punch Times</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
+        <div class="container text-center ">
+            <a href="#" class="navbar-brand align-items-center">
+                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
+            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+            </a>
+            <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon "></span>
+            </button> -->
+        </div>
+        </div>
+    </header>
+
+    <main role="main">
+
+        <section class="jumbotron text-center">
+        <div class="container">
+            <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
+            <p>
+            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
+            {% if user.department == 'ADMINISTRATIVE' %}
+            <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
+            {% endif %}
+
+            <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
+            </p>
+        </div>
+        </section>
+
+        <div class="album py-5 bg-light">
+        <div class="container text-center">
+                
+            <!-- <a href="/add/shift/{{job.id}}" class="btn btn-primary my-2">Add a new Shift</a> -->
+
+                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
+                    
+                    <h4 class="mb-3" id='buy'> Shift ID: *{{shift.id}}*</h4>
+
+                    <br/>
+
+                    <h4 class="center-text" id='buy'>Edit a Shift</h4>
+                    <form action="/update/shift/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
+                        <h2 class="text-dark center-text">Job Details</h2>
+                        
+                        
+                        <div style="background-color: #D3D3D3;" class=" align-items-center form-control ">
+                            <div class="center-text">
+                                <div class="form-group">
+                                    <label for="created_at">{{shift.created_at}}</label>
+                                </div>
+                                <!-- <div class="form-group">
+                                    <label for="founding_member"></label>
+                                    <input type="hidden" name="founding_member" class="form-control">
+                                </div> -->
+                                <div class="form-group center-text">
+                                    <label for="updated_at">Punch Out Time: {{ shift.updated_at }}</label>
+                                    <input type="datetime-local"  name="updated_at" class="form-control"></textarea>
+                                </div>
+                            
+                                </div>
+                                <input type="submit" value="Update" class="btn btn-primary">
+                            </div>
+      
+      </main>
+      
+</body>
+</html>

@@ -27,6 +27,10 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p>
               <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
+              {% if user.department == 'ADMINISTRATIVE' %}
+              <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
+              {% endif %}
+
               <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
             </p>
           </div>
@@ -41,6 +45,7 @@
                     
                     <h4 class="mb-3" id='buy'> Job IM: *{{job.im_number}}*</h4>
                     <h4 class="mb-3" id='buy'> Client: {{job.general_contractor}}</h4>
+
                     <br/>
 
                     {% set shifts_by_department = {} %}
@@ -61,6 +66,10 @@
                     <table class="table table-hover text-center">
                       <thead>
                         <tr>
+
+                        {% if user.department == 'ADMINISTRATIVE' %}
+                          <th>Shift ID</th>
+                        {% endif %}
                           <th>Employee</th>
                           <th>Department</th>
                           <th>Started Shift</th>
@@ -81,6 +90,10 @@
                         {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
                         {% set department_elapsed_times = department_elapsed_times.update({department: department_elapsed_time + elapsed_time_seconds}) %}      
                               <tr>
+                                {% if user.department == 'ADMINISTRATIVE' %}
+                                <td><a href="/edit/shift/{{shift.id}}">{{ shift.id }}</a></td>
+                                {% endif %}
+
                                   <td>{{ shift.creator.first_name }}</td>
                                   <td>{{ shift.creator.department }}</td>
                                   <td>{{ shift.created_at }}</td>
