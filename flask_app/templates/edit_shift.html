@@ -27,9 +27,9 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p>
             <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
-            {% if user.department == 'ADMINISTRATIVE' %}
+            <!-- {% if user.department == 'ADMINISTRATIVE' %}
             <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
-            {% endif %}
+            {% endif %} -->
 
             <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
             </p>
@@ -39,31 +39,36 @@
         <div class="album py-5 bg-light">
         <div class="container text-center">
                 
-            <!-- <a href="/add/shift/{{job.id}}" class="btn btn-primary my-2">Add a new Shift</a> -->
 
                 <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
                     
-                    <h4 class="mb-3" id='buy'> Shift ID: *{{shift.id}}*</h4>
+                    <h4 class="mb-3" id='buy'> Shift ID: *{{ shift.id }}*</h4>
 
                     <br/>
 
                     <h4 class="center-text" id='buy'>Edit a Shift</h4>
-                    <form action="/update/shift/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
+                    <form action="/update/time/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
                         <h2 class="text-dark center-text">Job Details</h2>
                         
                         
                         <div style="background-color: #D3D3D3;" class=" align-items-center form-control ">
                             <div class="center-text">
                                 <div class="form-group">
-                                    <label for="created_at">{{shift.created_at}}</label>
+                                    <label for="created_at">Shift Start: {{shift.created_at}}</label>
                                 </div>
                                 <!-- <div class="form-group">
-                                    <label for="founding_member"></label>
-                                    <input type="hidden" name="founding_member" class="form-control">
+                                    <label for="created_at">Orignal Punch Out Time: {{ shift.updated_at }}</label>
                                 </div> -->
+                            
                                 <div class="form-group center-text">
-                                    <label for="updated_at">Punch Out Time: {{ shift.updated_at }}</label>
-                                    <input type="datetime-local"  name="updated_at" class="form-control"></textarea>
+                                    <p>New Punch Out Time: </p>
+                                    <label for="updated_at"></label>
+                                    <input type="datetime-local" value="{{ shift.updated_at }}" name="updated_at"></label>
+                                    <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
+                                </div>
+                                <div class="form-group center-text">
+                                    <label for='shift id'></label>
+                                    <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
                                 </div>
                             
                                 </div>

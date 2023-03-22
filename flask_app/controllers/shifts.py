@@ -3,6 +3,7 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
+from datetime import datetime
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
@@ -40,7 +41,7 @@ def edit_shift(id):
     user_data = {
         "id":session['user_id']
     }
-    return render_template("edit_shift.html",shift = Shift.get_one_shift(data),user=User.get_by_id(user_data))
+    return render_template("edit_shift.html", shift = Shift.get_one_shift(data),user=User.get_by_id(user_data))
 
 
 @app.route('/update/shift/<int:id>',methods=['POST'])
@@ -52,9 +53,36 @@ def update_shift(id):
     data = {
         
         "id": request.form['id'],
-
+        
     }
     Shift.update(data)
+    return redirect('/dashboard')
+
+@app.route('/update/time/<int:id>',methods=['POST'])
+def update_time(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    updated_at = request.form.get('updated_at')
+    try:
+        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M:%S')
+        updated_at_mysql_format = updated_at.strftime('%Y-%m-%d %H:%M:%S')
+    except ValueError as e:
+        # Handle the case where the datetime input is not valid
+        # You can return an error message or redirect to an error page
+        print(f"Exception: {e}")
+        print(f"Invalid input value: {updated_at}")
+        return redirect(f'/edit/shift/{id}')
+
+
+    if not Shift.validate_shift(request.form):
+        return redirect(f'/update/time/{shift.id}')
+    data = {
+        
+        "id": request.form['id'],
+        "updated_at": updated_at_mysql_format
+    }
+    Shift.update_time(data)
     return redirect('/dashboard')
 
 @app.route('/shift/show')
