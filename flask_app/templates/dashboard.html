@@ -60,14 +60,15 @@
                         <td>{{ job.job_scope }}</td>
                         <td><a class="btn btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
                         
-                        {% if logged_in_user.id == job.user_id %}
+                          {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+
               
                             <a class="btn btn-success" href="/edit/job/{{job.id}}">Edit</a>
                             <!-- <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a>  -->
                             <a class="btn btn-danger" href="/destroy/job/{{job.id}}">Delete</a>
                         </td>
+                        
                         {% endif %}
-
 
                     </tr>
                         {% endfor %}
