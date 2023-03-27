@@ -16,14 +16,16 @@ class Job:
         self.estimated_hours = db_data['estimated_hours']
         self.user = None
         self.user_id = db_data['user_id']
+        self.context = db_data['context']
         self.created_at = db_data['created_at']
         self.updated_at = db_data['updated_at']
+        self.status = db_data['status']
         self.shifts = []
 
 
     @classmethod
     def save(cls,data):
-        query = "INSERT INTO jobs (im_number, general_contractor, job_scope, estimated_hours, user_id) VALUES (%(im_number)s,%(general_contractor)s,%(job_scope)s,%(estimated_hours)s,%(user_id)s);"
+        query = "INSERT INTO jobs (im_number, general_contractor, job_scope, estimated_hours, context, user_id) VALUES (%(im_number)s,%(general_contractor)s,%(job_scope)s,%(estimated_hours)s,%(context)s,%(user_id)s);"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
@@ -48,21 +50,6 @@ class Job:
             all_jobs.append(new_job)
         return all_jobs
     
-    # @classmethod
-    # def get_job_with_shifts(cls,data):
-    #     query = "SELECT * FROM jobs LEFT JOIN hourly_shifts ON hourlyshifts.job_id = jobs.id LEFT JOIN shifts ON hourly_shifts.shift_id = shifts.id where jobs.id = %(id)s; "
-    #     results = connectToMySQL(cls.db_name).query_db( query , data )
-
-    #     job = cls( results[0] )
-    #     for row_from_db in results:
-    #         shift_data = {
-    #             "id" : row_from_db["shifts.id"],
-    #             "created_at" : row_from_db["shifts.created_at"],
-    #             "updated_at" : row_from_db["shifts.updated_at"],
-    #             "job_id" : row_from_db["shifts.job_id"]    
-    #         }
-    #         job.shifts.append(shift.Shift( shift_data ))
-    #         return job
 
     @classmethod
     def get_one(cls,data):
@@ -74,7 +61,7 @@ class Job:
 
     @classmethod
     def update(cls, data):
-        query = "UPDATE jobs SET general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, estimated_hours=%(estimated_hours)s, updated_at = NOW() WHERE id = %(id)s;"
+        query = "UPDATE jobs SET general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, estimated_hours=%(estimated_hours)s, status=%(status)s, updated_at = NOW() WHERE id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query,data)
 
     @classmethod
@@ -141,23 +128,6 @@ class Job:
                 print(f"output: {output}")
                 print(f"output.shifts: {output.shifts}")
             return output
-
-    # @classmethod
-    # def time_diff( cls, data ):
-    #     query = ''' 
-    #         SELECT TIMESTAMPDIFF (HOUR, created_at, updated_at) 
-    #         FROM shifts 
-    #         '''
-    #     results = connectToMySQL(cls.db_name).query_db(query, data)
-    #     output = cls(results[0])
-    #     for row in results
-    #         duration_data = {
-                    # 'id' : row['shifts.id'],
-                    # 'job_id' : row['job_id'],
-                    # 'user_id' : row['user_id'],
-                    # 'shift duration' : row['shift_duration'],
-    #         }
-
 
 
     @classmethod

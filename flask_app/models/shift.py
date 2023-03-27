@@ -39,8 +39,10 @@ class Shift:
                 'job_scope': row['job_scope'],
                 'estimated_hours': row['estimated_hours'],
                 'user_id': row['user_id'],
+                'context': row['context'],
                 'created_at': row['jobs.created_at'],
                 'updated_at': row['jobs.updated_at'],
+                'status': row['status']
             }
             new_shift = cls(row)
             new_shift.job = job.Job(job_data)
@@ -71,31 +73,6 @@ class Shift:
         return connectToMySQL(cls.db_name).query_db(query,data)
 
 
-    # @classmethod
-    # def show_all_jobs(cls):
-    #     query = "SELECT * FROM jobs LEFT JOIN users on users.id = user_id;"
-    #     results = connectToMySQL(cls.db_name).query_db(query)
-    #     all_jobs = []
-    #     for row in results:
-    #         user_data = {
-    #             'id': row['id'],
-    #             'first_name': row['first_name'],
-    #             'last_name': row['last_name'],
-    #             'email': row['email'],
-    #             'password': row['password'],
-    #             'id': session['user_id'],
-    #             'created_at': row['users.created_at'],
-    #             'updated_at': row['users.updated_at'],
-    #         }
-    #         new_job = cls(row)
-    #         new_job.user = user.User(user_data)
-    #         all_jobs.append(new_job)
-    #     return all_jobs
-
-    # @classmethod
-    # def destroy(cls, data):
-    #     query = "DELETE from jobs where id = %(id)s;"
-    #     return connectToMySQL(cls.db_name).query_db(query,data)
 
     @staticmethod
     def validate_shift(shift):

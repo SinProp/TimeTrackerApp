@@ -26,6 +26,7 @@ def create_job():
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],
+        "context": request.form["context"],
         "user_id": session["user_id"]
     }
     Job.save(data)
@@ -52,11 +53,20 @@ def update_job():
         return redirect('/logout')
     if not Job.validate_job(request.form):
         return redirect(f'/update/job/{{job.id}}')
+
+    # Check if the "status" field is in the form data
+    if 'status' in request.form:
+        status = 1  # Active
+    else:
+        status = 0  # Inactive
+
     data = {
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],
-        "id": request.form['id']
+        "context": request.form["context"],
+        "id": request.form['id'],
+        "status": 1 if 'status' in request.form else 0
     }
     Job.update(data)
     return redirect('/dashboard')
