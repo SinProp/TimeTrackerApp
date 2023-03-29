@@ -45,7 +45,12 @@
                     
                     <h4 class="mb-3" id='buy'> Job IM: *{{job.im_number}}*</h4>
                     <h4 class="mb-3" id='buy'> Client: {{job.general_contractor}}</h4>
+                    
+                    {% if user.department == 'ADMINISTRATIVE' %}
+                    <h4 class="mb-3" id='buy' style="color: #cf3711;"> Estimated Labor Hours: {{job.estimated_hours}}</h4>
+                    {% endif %}
 
+                  
                     <br/>
 
                     {% set shifts_by_department = {} %}

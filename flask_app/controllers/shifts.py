@@ -65,8 +65,8 @@ def update_time(id):
 
     updated_at = request.form.get('updated_at')
     try:
-        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M:%S')
-        updated_at_mysql_format = updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+        updated_at_mysql_format = updated_at.strftime('%Y-%m-%d %H:%M')
     except ValueError as e:
         # Handle the case where the datetime input is not valid
         # You can return an error message or redirect to an error page
