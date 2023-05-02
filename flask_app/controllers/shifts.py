@@ -1,4 +1,4 @@
-from flask import render_template,redirect,session,request, flash
+from flask import render_template, redirect, session, request, flash
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
@@ -12,53 +12,57 @@ def new_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":session['user_id']
-        
+        "id": session['user_id']
+
     }
     job_data = {
         "id": id
     }
-    
-    return render_template('new_shift.html', job = Job.get_one(job_data), logged_in_user = User.get_by_id(data))
 
-@app.route('/create/shift',methods=['POST'])
+    return render_template('new_shift.html', job=Job.get_one(job_data), logged_in_user=User.get_by_id(data))
+
+
+@app.route('/create/shift', methods=['POST'])
 def create_shift():
     if 'user_id' not in session:
         return redirect('/logout')
     if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
-    
+
+    job_id = request.form['job.id']
     Shift.save(request.form)
-    return redirect('/dashboard')
+    return redirect(f'/show/job/{job_id}')
+
 
 @app.route('/edit/shift/<int:id>')
 def edit_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
     user_data = {
-        "id":session['user_id']
+        "id": session['user_id']
     }
-    return render_template("edit_shift.html", shift = Shift.get_one_shift(data),user=User.get_by_id(user_data))
+    return render_template("edit_shift.html", shift=Shift.get_one_shift(data), user=User.get_by_id(user_data))
 
 
-@app.route('/update/shift/<int:id>',methods=['POST'])
+@app.route('/update/shift/<int:id>', methods=['POST'])
 def update_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
     if not Shift.validate_shift(request.form):
         return redirect(f'/update/shift/{{shifts.id}}')
     data = {
-        
+
         "id": request.form['id'],
-        
+
     }
     Shift.update(data)
     return redirect('/dashboard')
 
-@app.route('/update/time/<int:id>',methods=['POST'])
+
+@app.route('/update/time/<int:id>', methods=['POST'])
 def update_time(id):
     if 'user_id' not in session:
         return redirect('/logout')
@@ -74,28 +78,28 @@ def update_time(id):
         print(f"Invalid input value: {updated_at}")
         return redirect(f'/edit/shift/{id}')
 
-
     if not Shift.validate_shift(request.form):
         return redirect(f'/update/time/{shift.id}')
     data = {
-        
+
         "id": request.form['id'],
         "updated_at": updated_at_mysql_format
     }
     Shift.update_time(data)
     return redirect('/dashboard')
 
+
 @app.route('/shift/show')
 def show_all_shifts():
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
     user_data = {
         "id": session['user_id']
     }
-    return render_template("see_shifts.html",shifts = Shift.get_all(),user=User.get_by_id(user_data))
+    return render_template("see_shifts.html", shifts=Shift.get_all(), user=User.get_by_id(user_data))
 
 
 @app.route('/user/shifts/<int:id>')
@@ -103,25 +107,27 @@ def show_user_shifts(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
-    
+
     user_data = {
         "id": session['user_id']
     }
-    
+
     return render_template("viewUserShifts.html",
-    thisShift = User.getUserWithShifts(data),
-    dtf = dateFormat,
-    user = User.get_by_id(user_data))
+                           thisShift=User.getUserWithShifts(data),
+                           dtf=dateFormat,
+                           user=User.get_by_id(user_data))
 
 
-@app.route('/destroy/shift/<int:id>')
+@app.route('/destroy/shift/<int:id>', methods=['POST'])
 def destroy_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
+    print(f"Deleting shift with id: {id}")
+
     data = {
-        "id":id
+        "id": id
     }
     Shift.destroy(data)
     return redirect('/dashboard')

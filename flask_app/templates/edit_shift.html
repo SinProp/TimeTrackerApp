@@ -47,33 +47,45 @@
                     <br/>
 
                     <h4 class="center-text" id='buy'>Edit a Shift</h4>
-                    <form action="/update/time/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
-                        <h2 class="text-dark center-text">Job Details</h2>
-                        
-                        
-                        <div style="background-color: #D3D3D3;" class=" align-items-center form-control ">
-                            <div class="center-text">
-                                <div class="form-group">
-                                    <label for="created_at">Shift Start: {{shift.created_at}}</label>
-                                </div>
-                                <div class="form-group">
-                                    <label for="created_at">Orignal Punch Out Time: {{ shift.updated_at }}</label>
-                                </div>
+                    
+                        <form action="/update/time/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
+                            <h2 class="text-dark center-text">Job Details</h2>
                             
-                                <div class="form-group center-text">
-                                    <p>New Punch Out Time: </p>
-                                    <label for="updated_at"></label>
-                                    <input type="datetime-local" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') }}" name="updated_at"></label>
-                                    <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
-                                </div>
-                                <div class="form-group center-text">
-                                    <label for='shift id'></label>
-                                    <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
-                                </div>
                             
-                                </div>
-                                <input type="submit" value="Update" class="btn btn-primary">
+                            <div style="background-color: #D3D3D3;" class=" align-items-center form-control ">
+                                <div class="center-text">
+                                    <div class="form-group">
+                                        <label for="created_at">Shift Start: {{shift.created_at}}</label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="created_at">Orignal Punch Out Time: {{ shift.updated_at }}</label>
+                                    </div>
+                                
+                                    <div class="form-group center-text">
+                                        <p>New Punch Out Time: </p>
+                                        <label for="updated_at"></label>
+                                        <input type="datetime-local" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') }}" name="updated_at"></label>
+                                        <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
+                                    </div>
+                                    <div class="form-group center-text">
+                                        <label for='shift id'></label>
+                                        <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
+                                    </div>
+                            <div class= "d-flex justify-content-center">
+                                    <input type="submit" value="Update" class="btn btn-primary">
+                                    </form>   
                             </div>
+                            <div class= "d-flex justify-content-center">     
+                                    <!-- Add the delete button form below -->
+                                    <form action="/destroy/shift/{{ shift.id }}" name="id" method="POST" class="center-text" onsubmit="return confirm('Are you sure you want to delete this shift?');">
+                                        <input type="submit" value="Delete" class="btn btn-danger mt-5">
+                                    </form>
+                                    <!-- End of delete button form -->
+                            </div>
+                        </div>
+                                
+                        </div>
+
     
     </main>
 
