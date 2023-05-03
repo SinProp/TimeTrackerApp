@@ -29,7 +29,7 @@ def create_shift():
     if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
 
-    job_id = request.form['job.id']
+    job_id = request.form['job_id']
     Shift.save(request.form)
     return redirect(f'/show/job/{job_id}')
 
@@ -52,14 +52,18 @@ def update_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
     if not Shift.validate_shift(request.form):
-        return redirect(f'/update/shift/{{shifts.id}}')
+        return redirect(f'/update/shift/{{shift.id}}')
     data = {
 
         "id": request.form['id'],
-
+        "job_id": request.form['job_id'],
     }
     Shift.update(data)
-    return redirect('/dashboard')
+
+    job_id = request.form['job_id']
+    print(f"Job ID: {job_id}")
+
+    return redirect(f'/show/job/{job_id}')
 
 
 @app.route('/update/time/<int:id>', methods=['POST'])

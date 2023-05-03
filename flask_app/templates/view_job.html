@@ -98,7 +98,7 @@
                                 {% if user.department == 'ADMINISTRATIVE' %}
                                 <td><a href="/edit/shift/{{shift.id}}">{{ shift.id }}</a></td>
                                 {% endif %}
-
+                                
                                   <td>{{ shift.creator.first_name }}</td>
                                   <td>{{ shift.creator.department }}</td>
                                   <td>{{ shift.created_at }}</td>
@@ -112,6 +112,7 @@
                                                   <form action="/update/shift/{{ shift.id }}" method="post">
                                                       <button type="submit" class="btn btn-primary">Punch Out!</button>
                                                       <input type="hidden" name="id" value="{{ shift.id }}">
+                                                      <input type="hidden" name="job_id" value="{{ job_id }}">
                                                   </form>
                                               {% endif %}
                                           {% else %}
