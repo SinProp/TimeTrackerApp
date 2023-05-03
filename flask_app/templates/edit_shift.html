@@ -64,7 +64,7 @@
                                     <div class="form-group center-text">
                                         <p>New Punch Out Time: </p>
                                         <label for="updated_at"></label>
-                                        <input type="datetime-local" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') }}" name="updated_at"></label>
+                                        <input type="datetime-local" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') if shift.updated_at is not none else '' }}" name="updated_at"></label>
                                         <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
                                     </div>
                                     <div class="form-group center-text">
