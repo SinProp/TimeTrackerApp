@@ -1,6 +1,6 @@
 # Time Tracker Application
 
-This is a time tracking application designed for measuring actual labor against estimated labor. The application was built using Python, MySQL, Flask, and is currently deployed on AWS.
+This is a time tracking application designed for measuring actual labor against estimated labor. The application was built using Python, MySQL, Flask, and is currently deployed on AWS with 10-12 Daily Users.
 
 ## Features
 
