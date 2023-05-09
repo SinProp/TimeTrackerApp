@@ -4,12 +4,17 @@ This is a time tracking application designed for measuring actual labor against 
 
 ## Features
 
-- User, Shift, and Job models created in MySQL
-- Front end composition using Python
-- MVC model leveraging Flask framework for modular functionality
-- Validation in user registration form
-- Capability for employees to clock in and out of jobs
-- Administrative ability to adjust shifts and toggle jobs on the active job board
+- **User, Shift, and Job models**: Created in MySQL, these models form the backbone of our application. They allow for structured data storage and manipulation, making it easier to manage user data, work shifts, and job details.
+
+- **Front end composition with Python**: Python is not only used for back-end logic but also used to design a user-friendly front-end. It provides an intuitive interface for users to interact with the application.
+
+- **Flask framework and MVC model**: The Flask framework is used to structure the application according to the MVC (Model-View-Controller) architecture. This design pattern is known for its ability to decouple data handling logic from user interface rendering, resulting in more organized and manageable code. It allows the modularization of functionality, making the app more scalable and maintainable.
+
+- **User registration form with validations**: The application includes a user registration form with built-in validations to ensure data integrity and security. This way, we make sure that only valid and safe data is stored in our database.
+
+- **Employee clock-in/clock-out functionality**: Employees can easily clock in and out of jobs, allowing us to accurately measure actual labor against the estimated labor. This feature is crucial for better project management and resource allocation.
+
+- **Administrative controls**: Administrative users have the ability to adjust shifts, in case an employee forgets to punch out. They can also toggle jobs on and off the active job board, providing real-time updates on the status of various jobs.
 
 ## Getting Started
 
