@@ -21,7 +21,7 @@ To get started with this project, follow these instructions:
 
 ## Documentation
 
-A Standard Operating Procedure (SOP) is available in PDF format to guide users through the application. [Access the SOP here](https://github.com/SinProp/TimeTrackerApp/raw/main/sop.pdf).
+A Standard Operating Procedure (SOP) is available in PDF format to guide users through the application. [Access the SOP here](Using The Island Time App SOP.pdf).
 
 ## Contributing
 
