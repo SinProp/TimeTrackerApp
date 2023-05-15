@@ -1,0 +1,41 @@
+/* styles.css */
+
+@media (max-width: 768px) {
+
+        body {
+        font-size: 18px;
+        }
+    
+        .jumbotron-heading {
+        font-size: 28px;
+        }
+    
+        .lead.text-muted {
+        font-size: 16px;
+        }
+    
+        .table {
+        width: 100%;
+        display: block;
+        }
+    
+        .table thead {
+        display: none;
+        }
+    
+        .table td, 
+        .table th {
+        display: block;
+        width: 100%;
+        text-align: center;  /* Add this line */
+        }
+    
+        .table td::before {
+        content: attr(data-label);
+        text-transform: uppercase;
+        font-weight: bold;
+        display: inline-block; /* Add this line */
+        width: 100%; /* Add this line */
+        }
+    }
+    

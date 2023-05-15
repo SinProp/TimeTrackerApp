@@ -2,10 +2,11 @@
 <head>
     <title>Island Time Dashboard</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/5.5.0-alpha1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iVG93xBfZlPH94m5bscu3ILjFwFuvkkX/+y7cG0yWR/uAdwFzu+5V4JKJ" crossorigin="anonymous">
-
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
 
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
 </head>
 <body>
@@ -44,42 +45,44 @@
         </section>
   
         <div class="album py-5 bg-light">
-          <div class="container">
+          <div class="container align-items-center">
             <!-- Active Jobs Table -->
                 <h4 class="mb-3 center-text" id='buy'>Active Jobs Board</h4>
-                <table class="table table-striped table-hover">
-                    <thead>
-                    <tr class="center-text">
-                        <th>IM #</th>
-                        <th>General Contractor</th>
-                        <th>Job Scope</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in jobs %}
-                        {% if job.status == 1 %}
-                    <tr class="center-text">
-                        <td><a href="/show/job/{{job.id}}">{{ job.im_number }}</a></td>
-                        <td>{{ job.general_contractor }}</td>
-                        <td>{{ job.job_scope }}</td>
-                        <td><a class="btn btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
-                        
-                          {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                <div class="col">
+                  <table class="mx-auto table table-striped table-hover">
+                      <thead>
+                      <tr class="center-text">
+                          <th data-label>IM #</th>
+                          <th data-label>General Contractor</th>
+                          <th data-label>Job Scope</th>
+                          <th data-label>Actions</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                          {% for job in jobs %}
+                          {% if job.status == 1 %}
+                      <tr class="center-text">
+                          <td><a href="/show/job/{{job.id}}">{{ job.im_number }}</a></td>
+                          <td>{{ job.general_contractor }}</td>
+                          <td>{{ job.job_scope }}</td>
+                          <td><a class="btn btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
+                          
+                            {% if logged_in_user.department == 'ADMINISTRATIVE' %}
 
-              
-                            <a class="btn btn-success" href="/edit/job/{{job.id}}">Edit</a>
-                            <!-- <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a>  -->
-                            <a class="btn btn-danger" href="/destroy/job/{{job.id}}">Delete</a>
-                        </td>
-                        
-                        {% endif %}
+                
+                              <a class="btn btn-success" href="/edit/job/{{job.id}}">Edit</a>
+                              <!-- <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a>  -->
+                              <a class="btn btn-danger" href="/destroy/job/{{job.id}}">Delete</a>
+                          </td>
+                          
+                          {% endif %}
 
-                    </tr>
-                        {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
+                      </tr>
+                          {% endif %}
+                          {% endfor %}
+                      </tbody>
+                  </table>
+              </div>
 
 
                 
@@ -94,10 +97,10 @@
                 <table class="table table-striped table-hover">
                     <thead>
                     <tr class="center-text">
-                        <th>IM #</th>
-                        <th>General Contractor</th>
-                        <th>Job Scope</th>
-                        <th>Actions</th>
+                        <th data-label>IM #</th>
+                        <th data-label>General Contractor</th>
+                        <th data-label>Job Scope</th>
+                        <th data-label>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
