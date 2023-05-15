@@ -28,6 +28,7 @@
         display: block;
         width: 100%;
         text-align: center;  /* Add this line */
+
         }
     
         .table td::before {
@@ -36,6 +37,24 @@
         font-weight: bold;
         display: inline-block; /* Add this line */
         width: 100%; /* Add this line */
+        }
+
+        /* Center the text in the registration and login forms */
+            .form-group {
+                text-align: center;
+            }
+
+        /* Make the registration and login forms responsive */
+            .form-group input[type="text"],
+            .form-group input[type="password"] {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+        /* Make the registration and login buttons responsive */
+            .btn {
+                width: 100%;
+                box-sizing: border-box;
         }
     }
     
