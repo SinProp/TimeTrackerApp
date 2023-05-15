@@ -8,6 +8,11 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <style>
+      .button-spacing {
+          margin-bottom: 10px;
+      }
+  </style>
 </head>
 <body>
 
@@ -65,14 +70,14 @@
                           <td><a href="/show/job/{{job.id}}">{{ job.im_number }}</a></td>
                           <td>{{ job.general_contractor }}</td>
                           <td>{{ job.job_scope }}</td>
-                          <td><a class="btn btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
+                          <td><a class="btn button-spacing btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
                           
                             {% if logged_in_user.department == 'ADMINISTRATIVE' %}
 
                 
-                              <a class="btn btn-success" href="/edit/job/{{job.id}}">Edit</a>
+                              <a class="btn button-spacing btn-success" href="/edit/job/{{job.id}}">Edit</a>
                               <!-- <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a>  -->
-                              <a class="btn btn-danger" href="/destroy/job/{{job.id}}">Delete</a>
+                              <a class="btn button-spacing btn-danger" href="/destroy/job/{{job.id}}">Delete</a>
                           </td>
                           
                           {% endif %}
