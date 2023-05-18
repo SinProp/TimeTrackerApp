@@ -28,6 +28,16 @@
             </button> -->
           </div>
         </div>
+
+        <script type="text/javascript">
+          var urlParams = new URLSearchParams(window.location.search);
+          var no_shifts = urlParams.get('no_shifts');
+      
+          if (no_shifts == 'True') {
+              alert('No shifts to see on this job yet!');
+          }
+      </script>
+      
       </header>
   
       <main role="main">

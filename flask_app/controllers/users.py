@@ -1,5 +1,5 @@
 from flask_app import app
-from flask import render_template, redirect, session, request, flash
+from flask import render_template, redirect, session, request, flash, url_for
 from ..models import user, job
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt(app)
@@ -63,9 +63,11 @@ def logout():
 
 @app.route("/dashboard")
 def dashboard():
+    no_shifts = request.args.get('no_shifts', default=False, type=bool)
     if 'user_id' not in session:
         return redirect('/')
     data = {
         'id': session['user_id']
     }
+
     return render_template("dashboard.html", jobs=job.Job.get_all(), logged_in_user=user.User.get_by_id(data))

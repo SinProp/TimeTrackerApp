@@ -1,4 +1,4 @@
-from flask import render_template,redirect,session,request, flash
+from flask import render_template, redirect, session, request, flash, url_for
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
@@ -6,16 +6,18 @@ from flask_app.models.shift import Shift
 from datetime import datetime
 dateFormat = "%m/%d/%Y %I:%M %p"
 
+
 @app.route('/new/job')
 def new_job():
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":session['user_id']
+        "id": session['user_id']
     }
-    return render_template('new_job.html', logged_in_user = User.get_by_id(data))
+    return render_template('new_job.html', logged_in_user=User.get_by_id(data))
 
-@app.route('/create/job',methods=['POST'])
+
+@app.route('/create/job', methods=['POST'])
 def create_job():
     if 'user_id' not in session:
         return redirect('/logout')
@@ -32,22 +34,23 @@ def create_job():
     Job.save(data)
     return redirect('/dashboard')
 
+
 @app.route('/edit/job/<int:id>')
 def edit_job(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
     user_data = {
-        "id":session['user_id']
+        "id": session['user_id']
     }
     return render_template("edit_job.html",
-    job = Job.get_one(data),
-    user=User.get_by_id(user_data))
+                           job=Job.get_one(data),
+                           user=User.get_by_id(user_data))
 
 
-@app.route('/update/job',methods=['POST'])
+@app.route('/update/job', methods=['POST'])
 def update_job():
     if 'user_id' not in session:
         return redirect('/logout')
@@ -71,30 +74,37 @@ def update_job():
     Job.update(data)
     return redirect('/dashboard')
 
+
 @app.route('/show/job/<int:id>')
 def get_one(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
-    
+
     user_data = {
         "id": session['user_id']
     }
-    
+
+    thisJob = Job.getJobWithShifts(data)
+
+    if thisJob is None:
+        return redirect(url_for('dashboard', no_shifts=True))
+
     return render_template("view_job.html",
-    thisJob = Job.getJobWithShifts(data),
-    dtf = dateFormat,
-    job = Job.get_one(data),
-    user = User.get_by_id(user_data))
+                           thisJob=thisJob,
+                           dtf=dateFormat,
+                           job=Job.get_one(data),
+                           user=User.get_by_id(user_data))
+
 
 @app.route('/destroy/job/<int:id>')
 def destroy_job(id):
     if 'user_id' not in session:
         return redirect('/logout')
     data = {
-        "id":id
+        "id": id
     }
     Job.destroy(data)
     return redirect('/dashboard')
