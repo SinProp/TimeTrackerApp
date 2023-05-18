@@ -59,6 +59,12 @@
                                     <div class="form-group">
                                         <label for="created_at">Shift Start: {{shift.created_at}}</label>
                                     </div>
+                                    <div class="form-group center-text">
+                                        <p>New Punch IN Time: </p>
+                                        <label for="created_at"></label>
+                                        <input type="datetime-local" value="{{ shift.created_at.strftime('%Y-%m-%dT%H:%M') if shift.created_at is not none else '' }}" name="created_at"></label>
+                                        <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
+                                    </div>
                                     <div class="form-group">
                                         <label for="created_at">Orignal Punch Out Time: {{ shift.updated_at }}</label>
                                     </div>

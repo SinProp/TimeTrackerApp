@@ -71,22 +71,27 @@ def update_time(id):
     if 'user_id' not in session:
         return redirect('/logout')
 
+    created_at = request.form.get('created_at')
     updated_at = request.form.get('updated_at')
     try:
+        created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
         updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+
+        created_at_mysql_format = created_at.strftime('%Y-%m-%d %H:%M')
         updated_at_mysql_format = updated_at.strftime('%Y-%m-%d %H:%M')
     except ValueError as e:
         # Handle the case where the datetime input is not valid
         # You can return an error message or redirect to an error page
         print(f"Exception: {e}")
-        print(f"Invalid input value: {updated_at}")
+        print(
+            f"Invalid input value: created_at: {created_at}, updated_at: {updated_at}")
         return redirect(f'/edit/shift/{id}')
 
     if not Shift.validate_shift(request.form):
-        return redirect(f'/update/time/{shift.id}')
+        return redirect(f'/update/time/{id}')
     data = {
-
         "id": request.form['id'],
+        "created_at": created_at_mysql_format,
         "updated_at": updated_at_mysql_format
     }
     Shift.update_time(data)
