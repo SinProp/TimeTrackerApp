@@ -15,6 +15,10 @@
           margin-bottom: 10px;
       }
   </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.5.0-alpha1/js/bootstrap.min.js" integrity="sha384-2C4l5qVdt4NK6nSi4JhptOqF4H36mO6Wn68qd5FCKfGWuqUG7SgnqMBGz+rqP1A5" crossorigin="anonymous"></script>
+  
 </head>
 <body>
 
@@ -34,6 +38,9 @@
       
       </header>
 
+        <script>
+          var bootstrap = require('bootstrap')
+        </script>
 
       <main role="main">
           <div class="modal" tabindex="-1" id="noShiftModal">
@@ -69,8 +76,14 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated. </p>
             <p>
-              <!-- Add the following line where you want to display the PDF -->
-              <embed src="\static\pdf\5.22 Job Log Gantt.pdf" type="application/pdf" style="width:100%;height:600px;"/>
+              <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#pdfCollapse" aria-expanded="false" aria-controls="pdfCollapse">
+                Toggle Gantt Chart
+              </button>
+
+                <div class="collapse" id="pdfCollapse">
+                  <!-- Add the following line where you want to display the PDF -->
+                  <embed src="\static\pdf\5.22 Job Log Gantt.pdf" type="application/pdf" style="width:100%;height:600px;"/>
+                </div> 
 
               {% if logged_in_user.department == 'ADMINISTRATIVE' %}
               <a href="/new/job" class="btn btn-primary my-2">Add a new IM #</a>
@@ -187,5 +200,16 @@
           });
         });
       </script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var togglePDF = document.querySelector('[data-bs-target="#pdfCollapse"]');
+          var pdfCollapse = document.getElementById('pdfCollapse');
+      
+          togglePDF.addEventListener("click", function () {
+            pdfCollapse.classList.toggle("show");
+          });
+        });
+      </script>
+      
 </body>
 </html>
