@@ -1,7 +1,9 @@
 <html>
 <head>
     <title>Island Time Dashboard</title>
+
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/5.5.0-alpha1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iVG93xBfZlPH94m5bscu3ILjFwFuvkkX/+y7cG0yWR/uAdwFzu+5V4JKJ" crossorigin="anonymous">
+    
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
@@ -29,24 +31,47 @@
           </div>
         </div>
 
-        <script type="text/javascript">
-          var urlParams = new URLSearchParams(window.location.search);
-          var no_shifts = urlParams.get('no_shifts');
-      
-          if (no_shifts == 'True') {
-              alert('No shifts to see on this job yet!');
-          }
-      </script>
       
       </header>
-  
+
+
       <main role="main">
-  
+          <div class="modal" tabindex="-1" id="noShiftModal">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Alert!</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p>No shifts available for the given job id.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if no_shifts %}
+              <script>
+                document.addEventListener("DOMContentLoaded", function(event) { 
+                  var modal = new bootstrap.Modal(document.getElementById('noShiftModal'))
+                  modal.show()
+                });
+              </script>
+          {% endif %}
+
+
+        
         <section class="jumbotron text-center">
           <div class="container">
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated. </p>
             <p>
+              <!-- Add the following line where you want to display the PDF -->
+              <embed src="\static\pdf\5.22 Job Log Gantt.pdf" type="application/pdf" style="width:100%;height:600px;"/>
+
               {% if logged_in_user.department == 'ADMINISTRATIVE' %}
               <a href="/new/job" class="btn btn-primary my-2">Add a new IM #</a>
               {% endif %}
