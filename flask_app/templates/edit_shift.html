@@ -79,6 +79,10 @@
                                         <label for='shift id'></label>
                                         <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
                                     </div>
+                                    <div class="form-group">
+                                        <label for="note">Note: </label>
+                                        <input type="text" name="note" class="form-control" value="{{shift.note}}"></textarea>
+                                    </div>
                             <div class= "d-flex justify-content-center">
                                     <input type="submit" value="Update" class="btn btn-primary">
                                     </form>   

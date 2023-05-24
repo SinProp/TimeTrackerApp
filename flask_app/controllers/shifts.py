@@ -48,6 +48,7 @@ def edit_shift(id):
         return redirect('/logout')
     data = {
         "id": id
+
     }
     user_data = {
         "id": session['user_id']
@@ -65,6 +66,7 @@ def update_shift(id):
 
         "id": request.form['id'],
         "job_id": request.form['job_id'],
+        "note": request.form['note']
     }
     Shift.update(data)
 
@@ -81,6 +83,7 @@ def update_time(id):
 
     created_at = request.form.get('created_at')
     updated_at = request.form.get('updated_at')
+
     try:
         created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
         updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
@@ -99,6 +102,7 @@ def update_time(id):
         return redirect(f'/update/time/{id}')
     data = {
         "id": request.form['id'],
+        "note": request.form['note'],
         "created_at": created_at_mysql_format,
         "updated_at": updated_at_mysql_format
     }
