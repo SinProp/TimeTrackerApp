@@ -30,7 +30,15 @@ def create_shift():
         return redirect('/add/shift')
 
     job_id = request.form['job_id']
-    Shift.save(request.form)
+    # Get the value of the 'note' field from the form
+    note = request.form['note']
+
+    shift_data = request.form.copy()  # Make a copy of the form data
+    # Assign the 'note' value to the 'note' key in the form data
+    shift_data['note'] = note
+
+    Shift.save(shift_data)  # Save the modified form data with the 'note' value
+
     return redirect(f'/show/job/{job_id}')
 
 

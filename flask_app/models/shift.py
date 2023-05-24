@@ -16,12 +16,13 @@ class Shift:
         self.updated_at = db_data['updated_at']
         self.job_id = db_data['job_id']
         self.user_id = db_data['user_id']
+        self.note = db_data['note']
         self.creator = None
         self.elapsed_time = db_data['elapsed_time']
 
     @classmethod
     def save(cls, data):
-        query = "INSERT INTO shifts (created_at, updated_at, job_id, user_id) VALUES (NOW(),NULL,%(job_id)s,%(user_id)s);"
+        query = "INSERT INTO shifts (created_at, updated_at, job_id, user_id, note) VALUES (NOW(),NULL,%(job_id)s,%(user_id)s,%(note)s);"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod

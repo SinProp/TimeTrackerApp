@@ -108,7 +108,8 @@ class Job:
                     'updated_at': row['shifts.updated_at'],
                     'elapsed_time': row['elapsed_time'],
                     'job_id': row['job_id'],
-                    'user_id': row['user_id']
+                    'user_id': row['user_id'],
+                    'note': row['note'],
                 }
                 user_info = {
                     'id': row['id'],
