@@ -59,7 +59,7 @@ class Job:
 
     @classmethod
     def update(cls, data):
-        query = "UPDATE jobs SET general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, estimated_hours=%(estimated_hours)s, status=%(status)s, updated_at = NOW() WHERE id = %(id)s;"
+        query = "UPDATE jobs SET general_contractor=%(general_contractor)s, job_scope=%(job_scope)s, context=%(context)s, estimated_hours=%(estimated_hours)s, status=%(status)s, updated_at = NOW() WHERE id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
