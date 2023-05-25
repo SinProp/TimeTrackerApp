@@ -50,8 +50,8 @@ def edit_job(id):
                            user=User.get_by_id(user_data))
 
 
-@app.route('/update/job', methods=['POST'])
-def update_job():
+@app.route('/update/job/<int:id>', methods=['POST'])
+def update_job(id):
     if 'user_id' not in session:
         return redirect('/logout')
     if not Job.validate_job(request.form):
@@ -64,6 +64,7 @@ def update_job():
         status = 0  # Inactive
 
     data = {
+        "im_number": request.form["im_number"],
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],

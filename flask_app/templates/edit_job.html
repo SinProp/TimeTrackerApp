@@ -36,17 +36,21 @@
           <div class="container">
                 
                 
-                <form action="/update/job" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
+                <form action="/update/job/{{ job.id }}" method="post" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
                     <h4 class="mb-3" id='buy'>Edit Job IM {{job.im_number}}</h4>
             
                     
                             <input type="hidden" name="id" value={{job.id}}>
                             <div class="form-group">
-                                <label for="general_contractor">General Contractor:</label>
-                                <input type="text" name="general_contractor" class="form-control" value="{{job.general_contractor}}">
+                                <label for="im_number">IM #:</label>
+                                <input type="text" name="im_number" class="form-control" value="{{job.im_number}}">
                             </div>
                             <div class="form-group">
-                                <label for="genre">Job Scope:</label>
+                                <label for="general_contractor">General Contractor:</label>
+                                <input type="text" name="general_contractor" class="form-control" value="{{job.general_contractor}}">
+                              </div>
+                            <div class="form-group">
+                                <label for="job_scope">Job Scope:</label>
                                 <input type="text" name="job_scope" class="form-control" value="{{job.job_scope}}">
                             </div>
                             <div class="form-group">

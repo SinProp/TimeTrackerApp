@@ -66,7 +66,7 @@ def update_shift(id):
 
         "id": request.form['id'],
         "job_id": request.form['job_id'],
-        "note": request.form['note']
+        # "note": request.form['note']
     }
     Shift.update(data)
 
