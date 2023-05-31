@@ -1,7 +1,8 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
-from ..models import user
-from ..models import job
+from ..models import user, job
+
+
 from datetime import datetime
 dateFormat = "%m/%d/%Y %I:%M %p"
 
@@ -47,6 +48,48 @@ class Shift:
             new_shift.job = job.Job(job_data)
             all_shifts.append(new_shift)
         return all_shifts
+
+    @classmethod
+    def find_shifts_in_date_range(cls, data):
+        query = '''
+            SELECT *, TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
+            FROM shifts
+            JOIN users
+            ON shifts.user_id = users.id
+            WHERE shifts.created_at BETWEEN %(start_date)s AND %(end_date)s;
+        '''
+        results = connectToMySQL(cls.db_name).query_db(query, data)
+
+        if not results:
+            return None
+
+        shifts = []
+        for row in results:
+            shift_info = {
+                'id': row['id'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at'],
+                'elapsed_time': row['elapsed_time'],
+                'job_id': row['job_id'],
+                'user_id': row['user_id'],
+                'note': row['note'],
+            }
+            user_info = {
+                'id': row['users.id'],
+                'first_name': row['first_name'],
+                'last_name': row['last_name'],
+                'email': row['email'],
+                'password': row['password'],
+                'department': row['department'],
+                'created_at': row['users.created_at'],
+                'updated_at': row['users.updated_at'],
+            }
+
+            this_shift = Shift(shift_info)
+            this_shift.creator = user.User(user_info)
+            shifts.append(this_shift)
+
+        return shifts
 
     @classmethod
     def get_one_shift(cls, data):

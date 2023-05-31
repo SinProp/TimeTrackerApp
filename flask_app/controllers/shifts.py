@@ -42,6 +42,23 @@ def create_shift():
     return redirect(f'/show/job/{job_id}')
 
 
+@app.route('/shift_report', methods=['GET', 'POST'])
+def shift_report():
+    user_data = {
+        "id": session['user_id']
+    }
+    if request.method == 'POST':
+        data = {
+            'start_date': request.form['start_date'],
+            'end_date': request.form['end_date']
+        }
+
+        shifts = Shift.find_shifts_in_date_range(data)
+        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data))
+    else:
+        return render_template('shift_report.html', user=User.get_by_id(user_data))
+
+
 @app.route('/edit/shift/<int:id>')
 def edit_shift(id):
     if 'user_id' not in session:
