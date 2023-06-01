@@ -69,6 +69,7 @@
                     <tr>
 
                     {% if user.department == 'ADMINISTRATIVE' %}
+                    
                         <th>Shift ID</th>
                     {% endif %}
                         <th>Employee</th>
@@ -81,7 +82,8 @@
                     <tbody>
                     
                             <tr>
-                                <td>{{ shift.id }}</td>
+                                <input type="hidden" name="id" value="{{ shift.id }}">
+                                <td><a href="/edit/shift/{{shift.id}}">{{ shift.id }}</a></td>
                                 <td>{{ shift.creator.first_name }}</td>
                                 <td>{{ shift.creator.department }}</td>
                                 <td>{{ shift.created_at }}</td>
