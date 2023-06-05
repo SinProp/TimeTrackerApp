@@ -3,7 +3,7 @@ from flask import flash
 from ..models import user, job
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
@@ -119,6 +119,19 @@ class Shift:
         print(f"Executing delete query for shift with id: {data['id']}")
         query = "DELETE from shifts where id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query, data)
+
+    @classmethod
+    def get_started_today(cls):
+        now = datetime.now()
+        start = datetime(now.year, now.month, now.day)
+        end = start + timedelta(days=1)
+        data = {
+            'start': start.strftime('%Y-%m-%d %H:%M:%S'),
+            'end': end.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        query = "SELECT COUNT(*) as count FROM shifts WHERE created_at BETWEEN %(start)s AND %(end)s;"
+        results = connectToMySQL(cls.db_name).query_db(query, data)
+        return results[0]['count'] if results else 0
 
     @staticmethod
     def validate_shift(shift):

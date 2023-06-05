@@ -1,6 +1,6 @@
 from flask_app import app
 from flask import render_template, redirect, session, request, flash, url_for
-from ..models import user, job
+from ..models import user, job, shift
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt(app)
 
@@ -70,4 +70,6 @@ def dashboard():
         'id': session['user_id']
     }
 
-    return render_template("dashboard.html", jobs=job.Job.get_all(), logged_in_user=user.User.get_by_id(data))
+    started_today = shift.Shift.get_started_today()
+
+    return render_template("dashboard.html", jobs=job.Job.get_all(), logged_in_user=user.User.get_by_id(data), started_today=started_today)
