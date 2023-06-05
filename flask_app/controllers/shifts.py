@@ -3,7 +3,7 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
-from datetime import datetime
+from datetime import datetime, timedelta
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
@@ -54,7 +54,25 @@ def shift_report():
         }
 
         shifts = Shift.find_shifts_in_date_range(data)
-        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data))
+
+        dateFormat = "%m/%d/%Y %I:%M %p"
+        total_elapsed_time = timedelta()  # Initialize a timedelta object
+
+        for shift in shifts:
+            if shift.elapsed_time:
+                total_elapsed_time += shift.elapsed_time
+
+        # format the total elapsed time
+        hours, remainder = divmod(total_elapsed_time.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(
+            int(hours), int(minutes), int(seconds))
+
+        formatted_elapsed_time = '{:02}:{:02}:{:02}'.format(
+            int(hours), int(minutes), int(seconds))
+        print(formatted_elapsed_time)
+
+        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data), total_elapsed_time_hms=total_elapsed_time_hms, formatted_elapsed_time=total_elapsed_time, start_date=data['start_date'], end_date=data['end_date'])
     else:
         return render_template('shift_report.html', user=User.get_by_id(user_data))
 
@@ -70,7 +88,17 @@ def edit_shift(id):
     user_data = {
         "id": session['user_id']
     }
-    return render_template("edit_shift.html", shift=Shift.get_one_shift(data), user=User.get_by_id(user_data))
+
+    shift = Shift.get_one_shift(data)
+
+    job_data = {
+        "id": shift.job_id  # assuming Shift model has a job_id field
+
+    }
+
+    job = Job.get_one(job_data)  # fetch the job associated with this shift
+
+    return render_template("edit_shift.html", shift=shift, job=job, user=User.get_by_id(user_data))
 
 
 @app.route('/update/shift/<int:id>', methods=['POST'])

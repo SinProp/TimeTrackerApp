@@ -50,17 +50,31 @@
             {% if user.department == 'ADMINISTRATIVE' %}
             <form action="/shift_report" method="POST">
                 <label for="start_date">Start Date:</label><br>
-                <input type="date" id="start_date" name="start_date"><br>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}"><br>
                 <label for="end_date">End Date:</label><br>
-                <input type="date" id="end_date" name="end_date"><br>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}"><br>
                 <input type="submit" value="Submit">
             </form>
             {% endif %}
 
+            {% if total_elapsed_time_hms %}
+                <h2>Total Elapsed Time (H:M:S): {{ total_elapsed_time_hms }}</h2>
+            {% else %}
+                <h2>No total elapsed time found</h2>
+            {% endif %}
+
+            <!-- {% if formatted_elapsed_time %}
+                <h2>Total Elapsed Time: {{ formatted_elapsed_time }}</h2>
+            {% else %}
+                <h2>No formatted elapsed time found</h2>
+            {% endif %} -->
 
             {% if shifts %}
             <!-- Total Shifts -->
             <h2>Total Shifts in Date Range: {{ shifts|length }}</h2>
+
+           
+
 
             <!-- Shifts Table -->
             {% for shift in shifts %}
