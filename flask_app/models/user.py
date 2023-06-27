@@ -82,6 +82,26 @@ class User:
         # return an instance of the first dictionary
 
     @classmethod
+    def get_all(cls):
+        query = "SELECT * FROM users;"
+        results = connectToMySQL(cls.db).query_db(query)
+        all_users = []
+        for row in results:
+            user_data = {
+                'id': row['id'],
+                'first_name': row['first_name'],
+                'last_name': row['last_name'],
+                'department': row['department'],
+                'email': row['email'],
+                'password': row['password'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at'],
+            }
+            new_user = cls(user_data)
+            all_users.append(new_user)
+        return all_users
+
+    @classmethod
     def getUserWithShifts(cls, data):
         query = '''
             SELECT * 

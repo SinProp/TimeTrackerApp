@@ -31,7 +31,7 @@ def create_shift():
 
     job_id = request.form['job_id']
     # Get the value of the 'note' field from the form
-    note = request.form['note']
+    note = request.form.get('note', '')
 
     shift_data = request.form.copy()  # Make a copy of the form data
     # Assign the 'note' value to the 'note' key in the form data
@@ -47,6 +47,10 @@ def shift_report():
     user_data = {
         "id": session['user_id']
     }
+
+    # Get the number of shifts started today
+    today_shifts_count = Shift.get_started_today()
+
     if request.method == 'POST':
         data = {
             'start_date': request.form['start_date'],
@@ -153,6 +157,22 @@ def update_time(id):
     }
     Shift.update_time(data)
     return redirect('/dashboard')
+
+
+@app.route('/admin/assign_shift', methods=['GET', 'POST'])
+def assign_shift():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    if request.method == 'POST':
+        # Validation for the form
+        if not Shift.validate_shift(request.form):
+            return redirect('/admin/assign_shift')
+        Shift.save(request.form)  # Save the form data to the Shift model
+        return redirect('/dashboard')
+    else:
+        users = User.get_all()  # Get all users
+        jobs = Job.get_all()  # Get all jobs
+        return render_template('assign_shift.html', users=users, jobs=jobs)
 
 
 @app.route('/shift/show')

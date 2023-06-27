@@ -58,4 +58,9 @@
                 box-sizing: border-box;
         }
     }
+
+    .my-dropdown {
+        width: 100%;
+    }
+    
     

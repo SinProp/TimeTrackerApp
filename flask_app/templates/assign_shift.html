@@ -1,0 +1,78 @@
+<html>
+<body>
+<head>
+    <title>Create Shifts</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+
+</head>
+<body>
+
+    <header>
+        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
+        <div class="container text-center ">
+            <a href="#" class="navbar-brand align-items-center">
+                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
+            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+            </a>
+            <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon "></span>
+            </button> -->
+        </div>
+        </div>
+    </header>
+
+    <main role="main">
+
+        <section class="jumbotron text-center">
+        <div class="container">
+            <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
+            <p>
+            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
+
+            <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
+            </p>
+        </div>
+        </section>
+
+        <div class="album py-5 bg-light">
+        <div class="container text-center">
+                
+
+                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
+                    
+                    
+                    <h4 class="center-text">Create a Shift</h4>
+                    <br/>
+
+                    <form action="/create/shift" method="POST" class="center-text form-horizontal p-4 my-4  text-light ">
+                        <div class="form-group">
+                        <select name="user_id" class="my-dropdown">
+                            {% for user in users %}
+                                <option value="{{user.id}}">{{user.first_name}} {{user.last_name}}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+                        <div class="form-group">
+                        <select name="job_id" class="my-dropdown">
+                            {% for job in jobs %}
+                                <option value="{{job.id}}">{{job.im_number}}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+                        <input type="datetime-local" name="start_time">
+                        <input type="submit" value="Assign Shift">
+                    </form>
+                    
+
+                    
+                    
+                        
+                        </div>
+                        </div>
+
+    
+    </main>
+
+</body>
+</html>
