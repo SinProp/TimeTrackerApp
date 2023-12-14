@@ -104,17 +104,17 @@
         <div class="album py-5 bg-light">
           <div class="container align-items-center">
             <!-- Active Jobs Table -->
-                <h4 class="mb-3 center-text" id='buy'>Active Jobs Board</h4>
+                <h4 class="mb-3 center-text text-center" id='buy'>Active Jobs Board</h4>
                 <div class="col">
                   <table class="mx-auto table table-striped table-hover">
-                      <thead>
-                      <tr class="center-text">
-                          <th data-label>IM #</th>
-                          <th data-label>General Contractor</th>
-                          <th data-label class="job-scope-column">Job Scope</th>
-                          <th data-label class="actions-column">Actions</th>
-                      </tr>
-                      </thead>
+                    <thead>
+                    <tr class="center-text">
+                      <th data-label>IM #</th>
+                      <th data-label>General Contractor</th>
+                      <th data-label class="job-scope-column">Job Scope</th>
+                      <th data-label class="actions-column">Actions</th>
+                    </tr>
+                    </thead>
                       <tbody>
                           {% for job in jobs %}
                           {% if job.status == 1 %}
