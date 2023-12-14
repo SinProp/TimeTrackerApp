@@ -131,6 +131,17 @@ class Job:
             return output
 
     @classmethod
+    def end_current_shift(cls, data):
+        # Find the current shift for the user
+        current_shift = Shift.query.filter_by(
+            user_id=data, end_time=None).first()
+        if current_shift:
+            # End the shift by setting the end time to now
+            current_shift.end_time = datetime.now()
+            # Save changes to the database
+            db.session.commit()
+
+    @classmethod
     def destroy(cls, data):
         query = "DELETE from jobs where id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query, data)

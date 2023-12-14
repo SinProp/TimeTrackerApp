@@ -37,6 +37,10 @@ def create_shift():
     # Assign the 'note' value to the 'note' key in the form data
     shift_data['note'] = note
 
+    # End any ongoing shift for the user before starting a new one
+    user_id = session['user_id']
+    Shift.end_current_shift(user_id)
+
     Shift.save(shift_data)  # Save the modified form data with the 'note' value
 
     return redirect(f'/show/job/{job_id}')

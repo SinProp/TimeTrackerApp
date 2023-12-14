@@ -115,6 +115,23 @@ class Shift:
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
+    def end_current_shift(cls, user_id):
+        now = datetime.now()
+        start_of_day = datetime(now.year, now.month, now.day)
+
+        query = '''
+        UPDATE shifts
+        SET updated_at = %(now)s
+        WHERE user_id = %(user_id)s AND created_at >= %(start_of_day)s AND updated_at IS NULL;
+        '''
+        data = {
+            'user_id': user_id,
+            'now': now.strftime('%Y-%m-%d %H:%M:%S'),
+            'start_of_day': start_of_day.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        connectToMySQL(cls.db_name).query_db(query, data)
+
+    @classmethod
     def destroy(cls, data):
         print(f"Executing delete query for shift with id: {data['id']}")
         query = "DELETE from shifts where id = %(id)s;"
