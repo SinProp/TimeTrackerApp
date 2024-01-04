@@ -15,11 +15,19 @@ def new_shift(id):
         "id": session['user_id']
 
     }
+    logged_in_user = User.get_by_id(data)
+
+    # Check if the logged-in user is an admin
+    if logged_in_user.department == 'ADMINISTRATIVE':
+        users = User.get_all()  # Get all users if the user is an admin
+    else:
+        users = None  # Set users to None if not an admin
+
     job_data = {
         "id": id
     }
 
-    return render_template('new_shift.html', job=Job.get_one(job_data), logged_in_user=User.get_by_id(data))
+    return render_template('new_shift.html', job=Job.get_one(job_data), logged_in_user=User.get_by_id(data), users=users)
 
 
 @app.route('/create/shift', methods=['POST'])
@@ -37,8 +45,12 @@ def create_shift():
     # Assign the 'note' value to the 'note' key in the form data
     shift_data['note'] = note
 
+    # Get the correct user_id from the form data
+    # This will be the ID of the selected employee when an admin is creating a shift
+    user_id = shift_data.get('user_id')
+
     # End any ongoing shift for the user before starting a new one
-    user_id = session['user_id']
+
     Shift.end_current_shift(user_id)
 
     Shift.save(shift_data)  # Save the modified form data with the 'note' value
@@ -83,6 +95,33 @@ def shift_report():
         return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data), total_elapsed_time_hms=total_elapsed_time_hms, formatted_elapsed_time=total_elapsed_time, start_date=data['start_date'], end_date=data['end_date'])
     else:
         return render_template('shift_report.html', user=User.get_by_id(user_data))
+
+
+@app.route('/punch_out/<int:shift_id>', methods=['POST'])
+def punch_out(shift_id):
+    if not session.get('is_admin'):
+        # Redirect to login page or dashboard with a message if the user is not admin
+        return redirect('/')
+
+    # Method to end the shift with a specific ID in the Shift model
+    Shift.end_shift(shift_id)
+    return redirect('/end_of_day')
+
+
+@app.route('/end_of_day')
+def end_of_day():
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    user_data = {
+        "id": session['user_id']
+    }
+
+    logged_in_user = User.get_by_id(user_data)
+
+    # Method to fetch ongoing shifts from the Shift model
+    ongoing_shifts = Shift.get_ongoing()
+    return render_template('eod_punch.html', ongoing_shifts=ongoing_shifts, logged_in_user=logged_in_user)
 
 
 @app.route('/edit/shift/<int:id>')

@@ -19,7 +19,7 @@ class Shift:
         self.user_id = db_data['user_id']
         self.note = db_data['note']
         self.creator = None
-        self.elapsed_time = db_data['elapsed_time']
+        self.elapsed_time = db_data.get('elapsed_time')
 
     @classmethod
     def save(cls, data):
@@ -98,6 +98,46 @@ class Shift:
         if len(results) == 0:
             return False
         return cls(results[0])
+
+    @classmethod
+    def get_ongoing(cls):
+        query = '''
+            SELECT shifts.*, users.id as user_id, users.first_name, users.last_name, users.email, 
+            users.password, users.department, users.created_at as users_created_at, 
+            users.updated_at as users_updated_at,
+            TIMEDIFF(IFNULL(shifts.updated_at, NOW()), shifts.created_at) as elapsed_time
+            FROM shifts
+            JOIN users ON shifts.user_id = users.id
+            WHERE shifts.updated_at IS NULL;
+        '''
+        results = connectToMySQL(cls.db_name).query_db(query)
+        ongoing_shifts = []
+        for row in results:
+            shift_info = {
+                'id': row['id'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at'],
+                'elapsed_time': row['elapsed_time'],
+                'job_id': row['job_id'],
+                'user_id': row['user_id'],
+                'note': row['note'],
+            }
+            user_info = {
+                'id': row['user_id'],
+                'first_name': row['first_name'],
+                'last_name': row['last_name'],
+                'email': row['email'],
+                # Consider security implications of this
+                'password': row['password'],
+                'department': row['department'],
+                'created_at': row['users_created_at'],
+                'updated_at': row['users_updated_at'],
+            }
+            this_shift = cls(shift_info)
+            this_shift.creator = user.User(user_info)
+            ongoing_shifts.append(this_shift)
+
+            return ongoing_shifts
 
     @classmethod
     def update(cls, data):

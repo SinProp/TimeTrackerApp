@@ -86,9 +86,12 @@
                 </div> 
 
               {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+              
               <a href="/new/job" class="btn btn-primary my-2">Add a new IM #</a>
               <a href="/shift_report" class="btn btn-secondary my-2">Run a Report</a>
               <a href="/admin/assign_shift" class="btn btn-danger my-2">Assign Shift</a>
+              <!-- <a href="/end_of_day" class="btn btn-primary my-2">E.O.D. Punch Out</a> -->
+              
 
               {% endif %}
 
@@ -126,7 +129,7 @@
                           
                             {% if logged_in_user.department == 'ADMINISTRATIVE' %}
 
-                
+
                               <a class="btn button-spacing btn-success" href="/edit/job/{{job.id}}">Edit</a>
                               <!-- <a class="btn btn-warning" href="/archive/job/{{job.id}}">Archive</a>  -->
                               <a class="btn button-spacing btn-danger" href="/destroy/job/{{job.id}}">Delete</a>

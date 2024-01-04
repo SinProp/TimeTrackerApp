@@ -1,30 +1,30 @@
 <html>
 <body>
-  <head>
+<head>
     <title>New Shift</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-  
+
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
 
-  </head>
+</head>
 <body>
 
     <header>
         <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
-          <div class="container text-center ">
+        <div class="container text-center ">
             <a href="#" class="navbar-brand align-items-center">
                 <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
-              <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
             </a>
             <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon "></span>
+            <span class="navbar-toggler-icon "></span>
             </button> -->
-          </div>
         </div>
-      </header>
-  
-      <main role="main">
-  
+        </div>
+    </header>
+
+    <main role="main">
+
         <section class="jumbotron text-center">
         <div class="container">
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
@@ -40,39 +40,40 @@
         </section>
 
         <div class="album py-5 bg-light">
-          <div class="container">
-              <h4 class="mb-3 text-center" id='buy'>New Shift for: {{ logged_in_user.first_name }} on IM #{{ job.im_number }}</h4>
-              <br>
-              
-              <div class="container">
-                  <form action="/create/shift" method="post" class="col-md-6 offset-md-3">
-                      <input name="job_id" type="hidden" value="{{ job.id }}">
-                      
-                      {% if users %}
-                      <div class="form-group">
-                          <label for="employee">Select Employee:</label>
-                          <select name="user_id" id="employee" class="form-control">
-                              {% for user in users %}
-                              <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
-                              {% endfor %}
-                          </select>
-                      </div>
-                      {% else %}
-                      <input name="user_id" type="hidden" value="{{ logged_in_user.id }}">
-                      {% endif %}
-      
-                      <div class="form-group">
-                          <label for="note">Note:</label>
-                          <textarea cols="20" rows="5" name="note" class="form-control"></textarea>
-                      </div>
-      
-                      <div class="form-group text-center">
-                          <input type="submit" value="Punch In!" class="btn btn-primary">
-                      </div>
-                  </form>
-              </div>
-          </div>
-      </div>
-      
-      </body>
-      </html>
+            <div class="container">
+                <h4 class="mb-3 text-center" id='buy'>Ongoing Shift Board</h4>
+                <br>
+
+                <div class="container">
+                    {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                        <h2>Ongoing Shifts</h2>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Shift Start</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shift in ongoing_shifts %}
+                                <tr>
+                                    <td>{{ shift.creator.first_name }}</td>
+                                    <td>{{ shift.created_at }}</td>
+                                    <td>
+                                        <form action="/update/shift/{{ shift.id }}" method="post">
+                                            <button type="submit" class="btn btn-primary">Punch Out!</button>
+                                            <input type="hidden" name="id" value="{{ shift.id }}">
+                                            
+                                        </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You do not have permission to view this page.</p>
+{% endif %}
+                </div>
+            </body>
+            </html>
