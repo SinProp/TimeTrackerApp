@@ -41,12 +41,9 @@
 
         <div class="album py-5 bg-light">
             <div class="container">
-                <h4 class="mb-3 text-center" id='buy'>Ongoing Shift Board</h4>
-                <br>
-
-                <div class="container">
-                    {% if logged_in_user.department == 'ADMINISTRATIVE' %}
-                        <h2>Ongoing Shifts</h2>
+                {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                    <h2>Ongoing Shifts</h2>
+                    {% if ongoing_shifts %}
                         <table class="table">
                             <thead>
                                 <tr>
@@ -61,19 +58,24 @@
                                     <td>{{ shift.creator.first_name }}</td>
                                     <td>{{ shift.created_at }}</td>
                                     <td>
-                                        <form action="/update/shift/{{ shift.id }}" method="post">
+                                        <form action="/update/time/{{ shift.id }}" method="post">
                                             <button type="submit" class="btn btn-primary">Punch Out!</button>
                                             <input type="hidden" name="id" value="{{ shift.id }}">
-                                            
+                                            <input type="hidden" name="job_id" value="{{ shift.job_id }}">  <!-- Assuming each shift has a job_id -->
+                                            <input type="hidden" name="created_at" value="{{ shift.created_at.strftime('%Y-%m-%dT%H:%M') }}">
                                         </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <p>You do not have permission to view this page.</p>
-{% endif %}
-                </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No ongoing shifts currently.</p>
+                    {% endif %}
+                {% else %}
+                    <p>You do not have permission to view this page.</p>
+                {% endif %}
+            </div>
+            
             </body>
             </html>

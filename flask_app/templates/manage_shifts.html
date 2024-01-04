@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Shifts</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/5.5.0-alpha1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iVG93xBfZlPH94m5bscu3ILjFwFuvkkX/+y7cG0yWR/uAdwFzu+5V4JKJ" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+    <header>
+        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
+            <div class="container text-center">
+            <a href="#" class="navbar-brand align-items-center">
+                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
+                <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+            </a>
+            <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon "></span>
+            </button> -->
+            </div>
+        </div>
+    </header>
+
+    <main role="main">
+        <section class="jumbotron text-center">
+            <div class="container">
+                <h1 class="jumbotron-heading">Manage Shifts</h1>
+                <p class="lead text-muted">Control panel for managing shifts.</p>
+                <p>
+                    <a href="/shift_report" class="btn btn-secondary my-2">Run a Report</a>
+                    <a href="/admin/assign_shift" class="btn btn-danger my-2">Assign Shift</a>
+                    <a href="/end_of_day" class="btn btn-primary my-2">E.O.D. Punch Out</a>
+                </p>
+            </div>
+        </section>
+
+        <!-- Additional content or sections can be added here -->
+
+    </main>
+
+    <footer>
+        <!-- Copy footer content from your dashboard template -->
+    </footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.5.0-alpha1/js/bootstrap.min.js" integrity="sha384-2C4l5qVdt4NK6nSi4JhptOqF4H36mO6Wn68qd5FCKfGWuqUG7SgnqMBGz+rqP1A5" crossorigin="anonymous"></script>
+    <!-- Additional

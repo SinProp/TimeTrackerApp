@@ -102,13 +102,14 @@ class Shift:
     @classmethod
     def get_ongoing(cls):
         query = '''
-            SELECT shifts.*, users.id as user_id, users.first_name, users.last_name, users.email, 
-            users.password, users.department, users.created_at as users_created_at, 
-            users.updated_at as users_updated_at,
-            TIMEDIFF(IFNULL(shifts.updated_at, NOW()), shifts.created_at) as elapsed_time
-            FROM shifts
-            JOIN users ON shifts.user_id = users.id
-            WHERE shifts.updated_at IS NULL;
+        SELECT shifts.*, users.id as user_id, users.first_name, users.last_name, users.email, 
+        users.password, users.department, users.created_at as users_created_at, 
+        users.updated_at as users_updated_at,
+        TIMEDIFF(IFNULL(shifts.updated_at, NOW()), shifts.created_at) as elapsed_time
+        FROM shifts
+        JOIN users ON shifts.user_id = users.id
+        WHERE shifts.updated_at IS NULL
+        AND DATE(shifts.created_at) = CURDATE();  -- Filter for shifts started today
         '''
         results = connectToMySQL(cls.db_name).query_db(query)
         ongoing_shifts = []

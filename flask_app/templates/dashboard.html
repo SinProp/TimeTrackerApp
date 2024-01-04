@@ -76,9 +76,9 @@
             <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
             <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated. </p>
             <p>
-              <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#pdfCollapse" aria-expanded="false" aria-controls="pdfCollapse">
+              <!-- <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#pdfCollapse" aria-expanded="false" aria-controls="pdfCollapse">
                 Toggle Gantt Chart
-              </button>
+              </button> -->
 
                 <div class="collapse" id="pdfCollapse">
                   <!-- Add the following line where you want to display the PDF -->
@@ -87,10 +87,11 @@
 
               {% if logged_in_user.department == 'ADMINISTRATIVE' %}
               
-              <a href="/new/job" class="btn btn-primary my-2">Add a new IM #</a>
-              <a href="/shift_report" class="btn btn-secondary my-2">Run a Report</a>
-              <a href="/admin/assign_shift" class="btn btn-danger my-2">Assign Shift</a>
-              <!-- <a href="/end_of_day" class="btn btn-primary my-2">E.O.D. Punch Out</a> -->
+              <a href="/manage_shifts" class="btn btn-primary">Manage Shifts</a>
+
+              <a href="/new/job" class="btn btn-success my-2">Add a new IM #</a>
+              
+              <a href="/end_of_day" class="btn btn-primary my-2">E.O.D. Punch Out</a>
               
 
               {% endif %}

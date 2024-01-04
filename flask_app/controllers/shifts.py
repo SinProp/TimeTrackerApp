@@ -99,13 +99,22 @@ def shift_report():
 
 @app.route('/punch_out/<int:shift_id>', methods=['POST'])
 def punch_out(shift_id):
-    if not session.get('is_admin'):
-        # Redirect to login page or dashboard with a message if the user is not admin
-        return redirect('/')
+    if 'user_id' not in session:
+        # Redirect to login page if no user is logged in
+        return redirect('/login')
+
+    # Fetch user details from the database
+    user_data = {"id": session['user_id']}
+    logged_in_user = User.get_by_id(user_data)
+
+    # Check if the user's department is ADMINISTRATIVE
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        # Redirect with an error message if the user is not admin
+        return redirect('/dashboard', error='Unauthorized access')
 
     # Method to end the shift with a specific ID in the Shift model
-    Shift.end_shift(shift_id)
-    return redirect('/end_of_day')
+    Shift.update(shift_id)
+    return redirect('/dashboard')
 
 
 @app.route('/end_of_day')
@@ -173,33 +182,44 @@ def update_time(id):
     if 'user_id' not in session:
         return redirect('/logout')
 
-    created_at = request.form.get('created_at')
-    updated_at = request.form.get('updated_at')
-
-    try:
-        created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
-        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
-
-        created_at_mysql_format = created_at.strftime('%Y-%m-%d %H:%M')
-        updated_at_mysql_format = updated_at.strftime('%Y-%m-%d %H:%M')
-    except ValueError as e:
-        # Handle the case where the datetime input is not valid
-        # You can return an error message or redirect to an error page
-        print(f"Exception: {e}")
-        print(
-            f"Invalid input value: created_at: {created_at}, updated_at: {updated_at}")
-        return redirect(f'/edit/shift/{id}')
-
     if not Shift.validate_shift(request.form):
-        return redirect(f'/update/time/{id}')
+        return redirect(f'/update/shift/{id}')
+
+    # Retrieve the start time (created_at) from the form
+    created_at = request.form.get('created_at')
+    if created_at:
+        try:
+            created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            # Redirect back with an error message, or log the error
+            return redirect(f'/update/shift/{id}', error='Invalid start date format')
+
+    # Check if updated_at is provided and parse it
+    updated_at = request.form.get('updated_at')
+    if updated_at:
+        try:
+            updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            # Redirect back with an error message, or log the error
+            return redirect(f'/update/shift/{id}', error='Invalid end date format')
+
+    # Prepare data for updating the shift
     data = {
-        "id": request.form['id'],
-        "note": request.form['note'],
-        "created_at": created_at_mysql_format,
-        "updated_at": updated_at_mysql_format
+        "id": id,
+        "job_id": request.form.get('job_id'),
+        "created_at": created_at,
+        "updated_at": updated_at,
+        # Include other fields as necessary
     }
-    Shift.update_time(data)
-    return redirect('/dashboard')
+
+    # Update the shift in the database
+    Shift.update(data)
+
+    # Redirect to the job's page after updating
+    job_id = request.form.get('job_id')
+    return redirect(f'/show/job/{job_id}')
 
 
 @app.route('/admin/assign_shift', methods=['GET', 'POST'])
@@ -247,6 +267,15 @@ def show_user_shifts(id):
                            thisShift=User.getUserWithShifts(data),
                            dtf=dateFormat,
                            user=User.get_by_id(user_data))
+
+
+@app.route('/manage_shifts')
+def manage_shifts():
+    if 'user_id' not in session:
+        # or redirect to a different page if user is not admin
+        return redirect('/logout')
+
+    return render_template('manage_shifts.html')
 
 
 @app.route('/destroy/shift/<int:id>', methods=['POST'])
