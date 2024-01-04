@@ -1,49 +1,49 @@
 from flask import render_template, redirect, session, request, flash, url_for, Blueprint, jsonify
-import smartsheet
+# import smartsheet
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
 from datetime import datetime
-from ..config.config import ss_client
+# from ..config.config import ss_client
 
 dateFormat = "%m/%d/%Y %I:%M %p"
 
-webhooks_blueprint = Blueprint('webhooks', __name__)
+# webhooks_blueprint = Blueprint('webhooks', __name__)
 
 
-@webhooks_blueprint.route('/webhooks', methods=['POST'])
-def smartsheet_webhook():
-    data = request.json
-    # Replace with actual column ID for 'Job Status'
-    job_status_column_id = '4963616297379716'
-    sheet_id = '1954899010316164'  # Replace with your sheet ID
+# @webhooks_blueprint.route('/webhooks', methods=['POST'])
+# def smartsheet_webhook():
+#     data = request.json
+#     # Replace with actual column ID for 'Job Status'
+#     job_status_column_id = '4963616297379716'
+#     sheet_id = '1954899010316164'  # Replace with your sheet ID
 
-    if data['eventType'] == 'updated' and job_status_column_id in data['columnIds']:
-        row_id = data['rowId']
-        # Retrieve the updated row data
-        row = ss_client.Sheets.get_row(sheet_id, row_id)
-        job_data = {
-            'im_number': get_cell_by_column_name(row, 'IM Number'),
-            'job_name_address': get_cell_by_column_name(row, 'Job Name / Address'),
-            'general_contractor': get_cell_by_column_name(row, 'G.C.'),
-            'job_scope': get_cell_by_column_name(row, 'Scope'),
-        }
-        job = Job(**job_data)
-        job.save_to_db()
-        return jsonify({'status': 'success'}), 200
-    return jsonify({'status': 'no action'}), 200
-
-
-def get_cell_by_column_name(row, column_name):
-    column_id = get_column_id_by_name(column_name)
-    return row.get_column(column_id).value if column_id else None
+#     if data['eventType'] == 'updated' and job_status_column_id in data['columnIds']:
+#         row_id = data['rowId']
+#         # Retrieve the updated row data
+#         row = ss_client.Sheets.get_row(sheet_id, row_id)
+#         job_data = {
+#             'im_number': get_cell_by_column_name(row, 'IM Number'),
+#             'job_name_address': get_cell_by_column_name(row, 'Job Name / Address'),
+#             'general_contractor': get_cell_by_column_name(row, 'G.C.'),
+#             'job_scope': get_cell_by_column_name(row, 'Scope'),
+#         }
+#         job = Job(**job_data)
+#         job.save_to_db()
+#         return jsonify({'status': 'success'}), 200
+#     return jsonify({'status': 'no action'}), 200
 
 
-def get_column_id_by_name(column_name):
-    # Logic to retrieve the column ID based on the column name from the sheet
-    # You would need to implement caching or a dictionary mapping to avoid excessive API calls
-    pass
+# def get_cell_by_column_name(row, column_name):
+#     column_id = get_column_id_by_name(column_name)
+#     return row.get_column(column_id).value if column_id else None
+
+
+# def get_column_id_by_name(column_name):
+#     # Logic to retrieve the column ID based on the column name from the sheet
+#     # You would need to implement caching or a dictionary mapping to avoid excessive API calls
+#     pass
 
 
 @app.route('/new/job')
