@@ -1,7 +1,7 @@
 from flask_app import app
 from flask_app.controllers import users, jobs, shifts
-from dotenv import load_dotenv
-from flask_app.config.config import ss_client
+# from dotenv import load_dotenv
+# from flask_app.config.config import ss_client
 # from flask_app.controllers.webhooks_controller import webhooks_blueprint, setup_webhook
 
 
