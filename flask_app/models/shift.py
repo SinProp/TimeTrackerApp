@@ -23,7 +23,7 @@ class Shift:
 
     @classmethod
     def save(cls, data):
-        query = "INSERT INTO shifts (created_at, updated_at, job_id, user_id, note) VALUES (NOW(),NULL,%(job_id)s,%(user_id)s,%(note)s);"
+        query = "INSERT INTO shifts (created_at, updated_at, job_id, user_id, note) VALUES (%(start_time)s, NULL, %(job_id)s, %(user_id)s, %(note)s);"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod

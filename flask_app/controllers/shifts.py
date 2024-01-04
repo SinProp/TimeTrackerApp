@@ -34,26 +34,36 @@ def new_shift(id):
 def create_shift():
     if 'user_id' not in session:
         return redirect('/logout')
+
     if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
 
+    # Ensure 'start_time' is provided in the form and parse it
+    start_time = request.form.get('start_time')
+    if start_time:
+        try:
+            start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            flash('Invalid start date format', 'error')
+            return redirect('/add/shift')
+
     job_id = request.form['job_id']
-    # Get the value of the 'note' field from the form
+    user_id = request.form['user_id']
     note = request.form.get('note', '')
 
-    shift_data = request.form.copy()  # Make a copy of the form data
-    # Assign the 'note' value to the 'note' key in the form data
-    shift_data['note'] = note
-
-    # Get the correct user_id from the form data
-    # This will be the ID of the selected employee when an admin is creating a shift
-    user_id = shift_data.get('user_id')
+    shift_data = {
+        'start_time': start_time,
+        'job_id': job_id,
+        'user_id': user_id,
+        'note': note
+    }
 
     # End any ongoing shift for the user before starting a new one
-
     Shift.end_current_shift(user_id)
 
-    Shift.save(shift_data)  # Save the modified form data with the 'note' value
+    # Save the shift with the start time provided by the user
+    Shift.save(shift_data)
 
     return redirect(f'/show/job/{job_id}')
 
@@ -161,24 +171,39 @@ def edit_shift(id):
 def update_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
-    if not Shift.validate_shift(request.form):
-        return redirect(f'/update/shift/{{shift.id}}')
-    data = {
 
-        "id": request.form['id'],
+    # Assuming validate_shift also validates the note field
+    if not Shift.validate_shift(request.form):
+        return redirect(f'/update/shift/{id}')
+
+    # Assuming the created_at and updated_at are part of the form data to be updated
+    created_at = request.form.get('created_at')
+    updated_at = request.form.get('updated_at')
+
+    # Parse the datetime if not None
+    if created_at:
+        created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+    if updated_at:
+        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+
+    data = {
+        "id": id,
         "job_id": request.form['job_id'],
-        # "note": request.form['note']
+        "created_at": created_at,
+        "updated_at": updated_at,
+        "note": request.form['note']
     }
-    Shift.update(data)
+
+    # Call the method to update the shift in the database
+    Shift.update_time(data)
 
     job_id = request.form['job_id']
-    print(f"Job ID: {job_id}")
-
     return redirect(f'/show/job/{job_id}')
 
 
-@app.route('/update/time/<int:id>', methods=['POST'])
+@app.route('/update/punchout/<int:id>', methods=['POST'])
 def update_time(id):
+    print("Form data received:", request.form)
     if 'user_id' not in session:
         return redirect('/logout')
 

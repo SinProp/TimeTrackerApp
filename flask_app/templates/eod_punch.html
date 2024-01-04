@@ -58,7 +58,7 @@
                                     <td>{{ shift.creator.first_name }}</td>
                                     <td>{{ shift.created_at }}</td>
                                     <td>
-                                        <form action="/update/time/{{ shift.id }}" method="post">
+                                        <form action="/update/punchout/{{ shift.id }}" method="post">
                                             <button type="submit" class="btn btn-primary">Punch Out!</button>
                                             <input type="hidden" name="id" value="{{ shift.id }}">
                                             <input type="hidden" name="job_id" value="{{ shift.job_id }}">  <!-- Assuming each shift has a job_id -->

@@ -51,7 +51,7 @@
 
                     <h4 class="center-text" id='buy'>Edit a Shift</h4>
                     
-                        <form action="/update/time/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
+                        <form action="/update/shift/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
                             <h2 class="text-dark center-text">Job Details</h2>
                             
                             
@@ -79,6 +79,8 @@
                                     <div class="form-group center-text">
                                         <label for='shift id'></label>
                                         <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
+                                        <input type="hidden" name="job_id" value="{{ job.id }}">
+
                                     </div>
                                     <div class="form-group">
                                         <label for="note">Note: </label>
