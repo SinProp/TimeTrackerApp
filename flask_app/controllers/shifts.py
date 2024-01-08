@@ -164,29 +164,28 @@ def update_shift(id):
     if 'user_id' not in session:
         return redirect('/logout')
 
-    # Assuming validate_shift also validates the note field
     if not Shift.validate_shift(request.form):
         return redirect(f'/update/shift/{id}')
 
-    # Assuming the created_at and updated_at are part of the form data to be updated
     created_at = request.form.get('created_at')
     updated_at = request.form.get('updated_at')
 
-    # Parse the datetime if not None
-    if created_at:
+    # Parse the datetime if not None and not empty
+    if created_at and created_at.strip():
         created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
-    if updated_at:
+    if updated_at and updated_at.strip():
         updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+    else:
+        updated_at = None  # Allow updated_at to be None
 
     data = {
         "id": id,
         "job_id": request.form['job_id'],
         "created_at": created_at,
-        "updated_at": updated_at,
+        "updated_at": updated_at,  # Can be None
         "note": request.form['note']
     }
 
-    # Call the method to update the shift in the database
     Shift.update_time(data)
 
     job_id = request.form['job_id']
