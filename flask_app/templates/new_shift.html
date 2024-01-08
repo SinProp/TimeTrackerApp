@@ -47,7 +47,7 @@
               <div class="container">
                   <form action="/create/shift" method="post" class="col-md-6 offset-md-3">
                       <input name="job_id" type="hidden" value="{{ job.id }}">
-                      
+                      <input type="hidden" id="start_time" name="start_time" class="form-control">
                       {% if users %}
                       <div class="form-group">
                           <label for="employee">Select Employee:</label>
@@ -60,6 +60,11 @@
                       {% else %}
                       <input name="user_id" type="hidden" value="{{ logged_in_user.id }}">
                       {% endif %}
+
+                    
+                    
+                      
+                    
       
                       <div class="form-group">
                           <label for="note">Note:</label>

@@ -38,29 +38,21 @@ def create_shift():
     if not Shift.validate_shift(request.form):
         return redirect('/add/shift')
 
-    # Ensure 'start_time' is provided in the form and parse it
-    start_time = request.form.get('start_time')
-    if start_time:
-        try:
-            start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M')
-        except ValueError:
-            # Handle the case where the date format is incorrect
-            flash('Invalid start date format', 'error')
-            return redirect('/add/shift')
-
     job_id = request.form['job_id']
-    user_id = request.form['user_id']
     note = request.form.get('note', '')
 
+    # Get the current server time as the start time
+    start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     shift_data = {
-        'start_time': start_time,
         'job_id': job_id,
-        'user_id': user_id,
-        'note': note
+        'user_id': request.form['user_id'],
+        'note': note,
+        'start_time': start_time  # Current time as start time
     }
 
     # End any ongoing shift for the user before starting a new one
-    Shift.end_current_shift(user_id)
+    Shift.end_current_shift(shift_data['user_id'])
 
     # Save the shift with the start time provided by the user
     Shift.save(shift_data)

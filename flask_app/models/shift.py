@@ -138,7 +138,7 @@ class Shift:
             this_shift.creator = user.User(user_info)
             ongoing_shifts.append(this_shift)
 
-            return ongoing_shifts
+        return ongoing_shifts
 
     @classmethod
     def update(cls, data):
