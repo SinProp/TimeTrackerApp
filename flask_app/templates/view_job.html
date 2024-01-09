@@ -111,7 +111,7 @@
                                               {% if shift.updated_at %}
                                                   Already Ended
                                               {% else %}
-                                                  <form action="/update/shift/{{ shift.id }}" method="post">
+                                                  <form action="/update/punchout/{{ shift.id }}" method="post">
                                                       <button type="submit" class="btn btn-primary">Punch Out!</button>
                                                       <input type="hidden" name="id" value="{{ shift.id }}">
                                                       <input type="hidden" name="job_id" value="{{ job.id }}">
