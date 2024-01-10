@@ -226,7 +226,7 @@ def update_time(id):
         "id": id,
         "job_id": request.form.get('job_id'),
         "created_at": created_at,
-        "updated_at": updated_at,
+        "updated_at": datetime.now(),
         # Include other fields as necessary
     }
 
