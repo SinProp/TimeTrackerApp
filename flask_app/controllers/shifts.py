@@ -41,14 +41,17 @@ def create_shift():
     job_id = request.form['job_id']
     note = request.form.get('note', '')
 
-    # Get the current server time as the start time
-    start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+# Use the start time provided by the user, if available
+    start_time = request.form.get('start_time')
+    if not start_time:
+        # If start time not provided, use current server time
+        start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     shift_data = {
         'job_id': job_id,
         'user_id': request.form['user_id'],
         'note': note,
-        'start_time': start_time  # Current time as start time
+        'start_time': start_time
     }
 
     # End any ongoing shift for the user before starting a new one
@@ -212,7 +215,14 @@ def update_time(id):
             return redirect(f'/update/shift/{id}', error='Invalid start date format')
 
     # Check if updated_at is provided and parse it
-    updated_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    updated_at = request.form.get('updated_at')
+    if updated_at:
+        try:
+            updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            # Redirect back with an error message, or log the error
+            return redirect(f'/update/shift/{id}', error='Invalid end date format')
 
     # Prepare data for updating the shift
     data = {
