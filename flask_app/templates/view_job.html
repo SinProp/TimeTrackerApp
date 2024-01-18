@@ -31,8 +31,7 @@
               <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
               <!-- {% if user.department == 'ADMINISTRATIVE' %}
               <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
-              {% endif %}
- -->
+              {% endif %}-->
               <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
             </p>
           </div>
@@ -54,19 +53,38 @@
 
                   
                     <br/>
+                    <!-- Initialize the dictionaries for shifts and elapsed times -->
 
                     {% set shifts_by_department = {} %}
                     {% set department_elapsed_times = {} %}
-                    
-                    {% for shifts in thisJob.shifts %}
-                        {% if shifts.job_id == job.id %}
-                            {% set department = shifts.creator.department %}
+
+                    <!-- Populate the shifts_by_department dictionary -->
+                    {% for shift in thisJob.shifts %}
+                        {% if shift.job_id == job.id %}
+                            {% set department = shift.creator.department %}
                             {% set shifts_for_department = shifts_by_department.setdefault(department, []) %}
-                            {% set shifts_for_department = shifts_for_department.append(shifts) %}
+                            {% set shifts_for_department = shifts_for_department.append(shift) %}
                         {% endif %}
                     {% endfor %}
 
+
+
+                    <!-- Calculate the total elapsed time for each department -->
                     {% for department, shifts in shifts_by_department.items() %}
+                        {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
+                        <!-- Calculate elapsed time for each shift -->
+                        <!-- {% for shift in shifts %}
+                              {% if shift.elapsed_time is not none %}
+                                  {% set elapsed_time_seconds = shift.elapsed_time.total_seconds() %}
+                                  {% set department_elapsed_time = department_elapsed_time + elapsed_time_seconds %}
+                              {% endif %}
+                        {% endfor %}
+                        {% set department_elapsed_times = department_elapsed_times.update({department: department_elapsed_time}) %}
+                    {% endfor %} -->
+
+                    <!-- Display the table for each department -->
+                  {% for department, shifts in shifts_by_department.items() %}
+                      
                     <!-- table header and rows for each shift -->
                       <h5>{{ department }}</h5>
                     
@@ -86,13 +104,22 @@
                         </tr>
                       </thead>
                       <tbody>
-                        
+
+                        {% set lunch_break_seconds = 1800 %}
+                        {% set minimum_shift_length_for_break = 14400 %}
+
+
                         {% for shift in shifts %}
                           {% if shift.elapsed_time is not none %}
                             {% set elapsed_time_seconds = shift.elapsed_time.total_seconds() %}
+                          <!-- Subtract lunch break if the shift is longer than the threshold -->
+                            {% if elapsed_time_seconds > minimum_shift_length_for_break %}
+                                {% set elapsed_time_seconds = elapsed_time_seconds - lunch_break_seconds %}
+                            {% endif %}
                           {% else %}
                             {% set elapsed_time_seconds = 0 %}
                         {% endif %}
+                        
 
                         {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
                         {% set department_elapsed_times = department_elapsed_times.update({department: department_elapsed_time + elapsed_time_seconds}) %}      
@@ -122,26 +149,23 @@
                                           {% endif %}
                                       </td>      
                               </tr>
-                              {% endfor %}
-                              <tr>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td ><strong style="color: #339933;">Total Elapsed Time:</strong></td>
+                        {% endfor %}     
                                 
-                                <td>
-                                      <strong style="color: #339933;">
-                                          {{ department_elapsed_times[department] // 3600 }} hours,
-                                          {{ (department_elapsed_times[department] // 60) % 60 }} minutes,
-                                          {{ department_elapsed_times[department] % 60 }} seconds
-                                      </strong>
-                                </td>
-                                <td></td>
-                            </tr>   
-                          </tbody>
-                        </table>
+                        <tr>
+                          <td colspan="6"><strong style="color: #339933;">Total Elapsed Time:</strong></td>
+                          <td><strong style="color: #339933;">
+                                <!-- Calculate the hours, minutes, and seconds -->            
+                                {{ department_elapsed_times[department] // 3600 }} hours,
+                                {{ (department_elapsed_times[department] // 60) % 60 }} minutes,
+                                {{ department_elapsed_times[department] % 60 }} seconds
+                              </strong>
+                          </td>
+                        </tr>                          
+                      </tbody>
+                    </table>              
+                  {% endfor %}   
                         
-                    {% endfor %}                            
+                                                  
                             
                         </div>
                     

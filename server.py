@@ -7,7 +7,6 @@ from flask_app.controllers import users, jobs, shifts
 
 # load_dotenv()
 
-
 # app.register_blueprint(webhooks_blueprint, url_prefix='/webhook')
 
 # setup_webhook(sheet_id='YOUR_SHEET_ID', callback_url='YOUR_CALLBACK_URL')
