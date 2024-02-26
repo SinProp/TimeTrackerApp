@@ -5,3 +5,4 @@ from flask import Flask
 app = Flask(__name__)
 
 app.secret_key = "proper-one is the one"
+app.config['SECURITY_PASSWORD_SALT'] = "ea0e3c5a1587439ac96a3dbafe09ae17"

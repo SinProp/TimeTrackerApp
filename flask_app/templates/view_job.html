@@ -49,6 +49,11 @@
                     
                     {% if user.department == 'ADMINISTRATIVE' %}
                     <h4 class="mb-3" id='buy' style="color: #cf3711;"> Estimated Labor Hours: {{job.estimated_hours}}</h4>
+                    <h4 class="mb-3" style="color: #007bff;">Total Hours Across All Departments: 
+                      {{ total_elapsed_seconds // 3600 }} hours,
+                      {{ (total_elapsed_seconds // 60) % 60 }} minutes,
+                      {{ total_elapsed_seconds % 60 }} seconds
+                    </h4>
                     {% endif %}
 
                   
@@ -57,6 +62,7 @@
 
                     {% set shifts_by_department = {} %}
                     {% set department_elapsed_times = {} %}
+                    
 
                     <!-- Populate the shifts_by_department dictionary -->
                     {% for shift in thisJob.shifts %}
@@ -72,15 +78,6 @@
                     <!-- Calculate the total elapsed time for each department -->
                     {% for department, shifts in shifts_by_department.items() %}
                         {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
-                        <!-- Calculate elapsed time for each shift -->
-                        <!-- {% for shift in shifts %}
-                              {% if shift.elapsed_time is not none %}
-                                  {% set elapsed_time_seconds = shift.elapsed_time.total_seconds() %}
-                                  {% set department_elapsed_time = department_elapsed_time + elapsed_time_seconds %}
-                              {% endif %}
-                        {% endfor %}
-                        {% set department_elapsed_times = department_elapsed_times.update({department: department_elapsed_time}) %}
-                    {% endfor %} -->
 
                     <!-- Display the table for each department -->
                   {% for department, shifts in shifts_by_department.items() %}
@@ -163,9 +160,16 @@
                         </tr>                          
                       </tbody>
                     </table>              
-                  {% endfor %}   
-                        
-                                                  
+                  {% endfor %}
+                  {% endfor %}
+
+
+                      {% set total_elapsed_seconds = 0 %}
+                      {% for department_time in department_elapsed_times.values() %}
+                        {% set total_elapsed_seconds = total_elapsed_seconds + department_time %}
+                      {% endfor %}
+                    
+                    
                             
                         </div>
                     
@@ -173,9 +177,6 @@
           </div>
   
       </main>
-
-
-
 
 
 </body>
