@@ -30,6 +30,8 @@
             <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
             <a href="/archive" class="btn btn-secondary my-2">Review Archived IM #'s</a>
             <a href="/logout" class="btn btn-danger my-2">Logout</a>
+            <button id="processApprovedJobsBtn" class="btn btn-primary">Process Approved Jobs</button>
+
             </p>
         </div>
         </section>
@@ -77,3 +79,30 @@
                             </div>
         </div>
         </div>
+      </main>
+      <script>
+              document.getElementById('processApprovedJobsBtn').addEventListener('click', function() {
+                  fetch('/api/process-approved-jobs', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json'
+                      }
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                      if (data.message) {
+                          alert(data.message);
+                      } else {
+                          alert(data.error);
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error:', error);
+                      alert('An error occurred while processing approved jobs.');
+                  });
+              });
+      </script>
+    
+
+      </body>
+</html>

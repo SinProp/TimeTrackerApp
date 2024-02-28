@@ -9,42 +9,6 @@ from datetime import datetime
 
 dateFormat = "%m/%d/%Y %I:%M %p"
 
-# webhooks_blueprint = Blueprint('webhooks', __name__)
-
-
-# @webhooks_blueprint.route('/webhooks', methods=['POST'])
-# def smartsheet_webhook():
-#     data = request.json
-#     # Replace with actual column ID for 'Job Status'
-#     job_status_column_id = '4963616297379716'
-#     sheet_id = '1954899010316164'  # Replace with your sheet ID
-
-#     if data['eventType'] == 'updated' and job_status_column_id in data['columnIds']:
-#         row_id = data['rowId']
-#         # Retrieve the updated row data
-#         row = ss_client.Sheets.get_row(sheet_id, row_id)
-#         job_data = {
-#             'im_number': get_cell_by_column_name(row, 'IM Number'),
-#             'job_name_address': get_cell_by_column_name(row, 'Job Name / Address'),
-#             'general_contractor': get_cell_by_column_name(row, 'G.C.'),
-#             'job_scope': get_cell_by_column_name(row, 'Scope'),
-#         }
-#         job = Job(**job_data)
-#         job.save_to_db()
-#         return jsonify({'status': 'success'}), 200
-#     return jsonify({'status': 'no action'}), 200
-
-
-# def get_cell_by_column_name(row, column_name):
-#     column_id = get_column_id_by_name(column_name)
-#     return row.get_column(column_id).value if column_id else None
-
-
-# def get_column_id_by_name(column_name):
-#     # Logic to retrieve the column ID based on the column name from the sheet
-#     # You would need to implement caching or a dictionary mapping to avoid excessive API calls
-#     pass
-
 
 @app.route('/new/job')
 def new_job():
@@ -115,6 +79,32 @@ def update_job(id):
     return redirect('/dashboard')
 
 
+@app.route('/api/process-approved-jobs', methods=['POST'])
+def process_approved_jobs():
+    try:
+        # Get approved jobs from Smartsheet
+        approved_jobs = Job.get_approved_jobs_from_smartsheet()
+        print(f"Retrieved {len(approved_jobs)} Approved jobs from Smartsheet.")
+
+        # Process each approved job
+        for job in approved_jobs:
+            print(f"Processing job with IM number: {job['im_number']}")
+            # Check if the IM number exists
+            if not Job.check_im_number_exists({'im_number': job['im_number']}):
+                print(
+                    f"IM number {job['im_number']} does not exist in the database. Adding new record.")
+                # Add a new record
+                Job.add_new_record(job)
+
+            else:
+                (f"IM number {job['im_number']} already exists in the database. Skipping.")
+
+        print("Finished processing approved jobs.")
+        return jsonify({"message": "Approved jobs processed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/show/job/<int:id>')
 def get_one(id):
     if 'user_id' not in session:
@@ -132,11 +122,18 @@ def get_one(id):
     if thisJob is None:
         return redirect(url_for('dashboard', no_shifts=True))
 
+    # Calculate total_elapsed_seconds
+    total_elapsed_seconds = 0
+    for shift in thisJob.shifts:
+        if shift.elapsed_time is not None:
+            total_elapsed_seconds += shift.elapsed_time.total_seconds()
+
     return render_template("view_job.html",
                            thisJob=thisJob,
                            dtf=dateFormat,
                            job=Job.get_one(data),
-                           user=User.get_by_id(user_data))
+                           user=User.get_by_id(user_data),
+                           total_elapsed_seconds=total_elapsed_seconds)
 
 
 @app.route('/destroy/job/<int:id>')

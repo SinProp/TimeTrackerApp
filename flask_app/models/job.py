@@ -1,12 +1,16 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 from ..models import user, shift
+import smartsheet
 from datetime import datetime
+from ..config.config import (SMARTSHEET_API_KEY, SHEET_ID, SUBMITTAL_STATUS_COLUMN_ID,
+                             IM_NUMBER_COLUMN_ID, SCOPE_COLUMN_ID, GC_COLUMN_ID)
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
 class Job:
     db_name = 'man_hours'
+    smartsheet_client = smartsheet.Smartsheet(SMARTSHEET_API_KEY)
 
     def __init__(self, db_data):
         self.id = db_data['id']
@@ -142,6 +146,58 @@ class Job:
             db.session.commit()
 
     @classmethod
+    def get_approved_jobs_from_smartsheet(cls):
+        approved_jobs = []
+        print("Fetching sheet from Smartsheet...")
+        sheet = cls.smartsheet_client.Sheets.get_sheet(SHEET_ID)
+        print("Sheet fetched successfully.")
+
+        for row in sheet.rows:
+            # Initialize a dictionary to hold the job details
+            job = {'row_id': row.id}
+
+            # Iterate through cells in the row and populate the job dictionary based on column ID
+            for cell in row.cells:
+                if str(cell.column_id) == SUBMITTAL_STATUS_COLUMN_ID:
+                    job['submittal_status'] = cell.value
+                elif str(cell.column_id) == IM_NUMBER_COLUMN_ID:
+                    job['im_number'] = cell.value
+                elif str(cell.column_id) == SCOPE_COLUMN_ID:
+                    job['job_scope'] = cell.value
+                elif str(cell.column_id) == GC_COLUMN_ID:
+                    job['general_contractor'] = cell.value
+
+            # Check if the Submittal Status is 'Approved' and all required details are present
+            if job.get('submittal_status') == 'Approved':
+                print(f"Approved status found in row {row.row_number}.")
+                if all(k in job for k in ('im_number', 'job_scope', 'general_contractor')):
+                    approved_jobs.append(job)
+                    print(f"Job added: {job}")
+
+        print(f"Total approved jobs: {len(approved_jobs)}")
+        return approved_jobs
+
+    @classmethod
+    def check_im_number_exists(cls, data):
+        query = "SELECT COUNT(*) AS count FROM jobs WHERE im_number = %(im_number)s;"
+        result = connectToMySQL(cls.db_name).query_db(query, data)
+        return result[0]['count'] > 0
+
+    @classmethod
+    def add_new_record(cls, data):
+        # Set default value for estimated_hours if it's not present in data
+        data.setdefault('estimated_hours', '0000')
+        data.setdefault('user_id', '11')
+
+        if not cls.check_im_number_exists({'im_number': data['im_number']}):
+            query = """INSERT INTO jobs (im_number, general_contractor, job_scope, estimated_hours, user_id) VALUES (%(im_number)s, %(general_contractor)s, %(job_scope)s, %(estimated_hours)s, %(user_id)s);"""
+            return connectToMySQL(cls.db_name).query_db(query, data)
+        else:
+            flash(
+                f"IM number {data['im_number']} already exists in the database.", "error")
+            return False
+
+    @classmethod
     def destroy(cls, data):
         query = "DELETE from jobs where id = %(id)s;"
         return connectToMySQL(cls.db_name).query_db(query, data)
@@ -154,7 +210,7 @@ class Job:
         #     flash("IM Numbers must be at least 4 digits","job")
         if len(job['general_contractor']) < 3:
             is_valid = False
-            flash("GC names must be at least 3 characters", "job")
+            flash("general_contractor names must be at least 3 characters", "job")
         # if len(band['founding_member']) < 3:
         #     is_valid = False
         #     flash("The name of the Founding Member must be at least 3 characters","band")

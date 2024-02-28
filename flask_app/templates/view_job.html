@@ -76,8 +76,6 @@
 
 
                     <!-- Calculate the total elapsed time for each department -->
-                    {% for department, shifts in shifts_by_department.items() %}
-                        {% set department_elapsed_time = department_elapsed_times.setdefault(department, 0) %}
 
                     <!-- Display the table for each department -->
                   {% for department, shifts in shifts_by_department.items() %}
@@ -160,7 +158,6 @@
                         </tr>                          
                       </tbody>
                     </table>              
-                  {% endfor %}
                   {% endfor %}
 
 
