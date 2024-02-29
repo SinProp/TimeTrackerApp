@@ -3,6 +3,7 @@ from flask import flash
 from ..models import user, shift
 import smartsheet
 from datetime import datetime
+import time
 from ..config.config import (SMARTSHEET_API_KEY, SHEET_ID, SUBMITTAL_STATUS_COLUMN_ID,
                              IM_NUMBER_COLUMN_ID, SCOPE_COLUMN_ID, GC_COLUMN_ID)
 dateFormat = "%m/%d/%Y %I:%M %p"
