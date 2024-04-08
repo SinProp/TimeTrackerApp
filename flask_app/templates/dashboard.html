@@ -32,6 +32,7 @@
             <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
               <span class="navbar-toggler-icon "></span>
             </button> -->
+
           </div>
         </div>
 
@@ -110,6 +111,15 @@
           <div class="container align-items-center">
             <!-- Active Jobs Table -->
                 <h4 class="mb-3 center-text text-center" id='buy'>Active Jobs Board</h4>
+                <div class="row justify-content-center">
+                  <div class="col-md-6"> <!-- Adjust col-md-6 to increase or decrease the width of the input -->
+                      <input type="text" id="searchText" class="form-control" placeholder="Search...">
+                  </div>
+                  <div class="col-md-auto">
+                      <button onclick="searchTextOnPage()" class="btn btn-primary">Search</button>
+                  </div>
+                </div>
+    
                 <div class="col">
                   <table class="mx-auto table table-striped table-hover">
                     <thead>
@@ -198,6 +208,42 @@
         </div>
   
       </main>
+
+      <script>
+        function searchTextOnPage() {
+          var searchText = document.getElementById('searchText').value;
+          var content = document.querySelector('main'); // Adjust the selector as needed
+
+          // Remove previous highlights
+          content.innerHTML = content.innerHTML.replace(/<mark class="highlight">|<\/mark>/g, '');
+
+          if (searchText) {
+              var re = new RegExp(`(${searchText})`, "gi");
+              var matchCount = content.innerHTML.match(re);
+              if (matchCount) {
+                  content.innerHTML = content.innerHTML.replace(re, '<mark class="highlight">$1</mark>');
+
+                  // Find the first highlighted element and scroll to it
+                  var firstHighlight = document.querySelector('.highlight');
+                  if (firstHighlight) {
+                      firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+
+                  alert('Found ' + matchCount.length + ' occurrence(s) of "' + searchText + '".');
+              } else {
+                  alert('No results found for "' + searchText + '".');
+              }
+          }
+      }
+
+      </script>
+    
+    <style>
+        .highlight { background-color: yellow; }
+        .search-container {
+            margin-top: 10px;
+        }
+    </style>
 
       <script>
         document.addEventListener("DOMContentLoaded", function () {
