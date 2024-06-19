@@ -124,7 +124,7 @@
                   <table class="mx-auto table table-striped table-hover">
                     <thead>
                     <tr class="center-text">
-                      <th data-label>IM #</th>
+                      <th data-label>IM #  </th>
                       <th data-label>General Contractor</th>
                       <th data-label class="job-scope-column">Job Scope</th>
                       <th data-label class="actions-column">Actions</th>
@@ -134,10 +134,10 @@
                           {% for job in jobs %}
                           {% if job.status == 1 %}
                       <tr class="center-text">
-                          <td><a href="/show/job/{{job.id}}">{{ job.im_number }}</a></td>
-                          <td>{{ job.general_contractor }}</td>
-                          <td>{{ job.job_scope }}</td>
-                          <td><a class="btn button-spacing btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
+                          <td class="no-wrap"><a href="/show/job/{{job.id}}">{{ job.im_number }}</a></td>
+                          <td class="no-wrap">{{ job.general_contractor }}</td>
+                          <td class="no-wrap">{{ job.job_scope }}</td>
+                          <td class="no-wrap"><a class="btn button-spacing btn-info" href="/add/shift/{{job.id}}">Start a Shift</a>
                           
                             {% if logged_in_user.department == 'ADMINISTRATIVE' %}
 

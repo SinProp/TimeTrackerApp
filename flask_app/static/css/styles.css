@@ -62,7 +62,7 @@
     }
 
     .job-scope-column {
-        width: 60%; /* Adjust the percentage as needed */
+        width: 35%; /* Adjust the percentage as needed */
     }
 
     .actions-column {
@@ -72,4 +72,14 @@
         width: 100%;
     }
     
+
+    .center-text {
+        text-align: center;
+    }
+    .button-spacing {
+        margin-left: 10px;
+    }
+    .nowrap {
+        white-space: nowrap;
+    }
     
