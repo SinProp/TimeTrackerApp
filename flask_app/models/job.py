@@ -1,6 +1,7 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
-from ..models import user, shift
+
+from ..models import shift, user
 import smartsheet
 from datetime import datetime
 import time
@@ -26,6 +27,7 @@ class Job:
         self.updated_at = db_data['updated_at']
         self.status = db_data['status']
         self.shifts = []
+        self.shift_users = []  # Add this line
 
     @classmethod
     def save(cls, data):
@@ -34,25 +36,35 @@ class Job:
 
     @classmethod
     def get_all(cls):
-        query = "SELECT * FROM jobs LEFT JOIN users on users.id = user_id;"
-        results = connectToMySQL(cls.db_name).query_db(query)
-        all_jobs = []
+        today = datetime.now().strftime('%Y-%m-%d')
+        query = """
+            SELECT jobs.*,
+                shifts.created_at AS shift_start,
+                shifts.updated_at AS shift_end,
+                shift_users.id AS shift_user_id,
+                shift_users.first_name AS shift_user_first_name
+            FROM jobs
+            LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
+            LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
+            ORDER BY jobs.id;
+        """
+        results = connectToMySQL(cls.db_name).query_db(query, (today,))
+        if not results:
+            return []
+
+        job_dict = {}
         for row in results:
-            user_data = {
-                'id': row['id'],
-                'first_name': row['first_name'],
-                'last_name': row['last_name'],
-                'department': row['department'],
-                'email': row['email'],
-                'password': row['password'],
-                'user_id': row['user_id'],
-                'created_at': row['users.created_at'],
-                'updated_at': row['users.updated_at'],
-            }
-            new_job = cls(row)
-            new_job.user = user.User(user_data)
-            all_jobs.append(new_job)
-        return all_jobs
+            if row['id'] not in job_dict:
+                new_job = cls(row)
+                new_job.shift_users = []
+                job_dict[row['id']] = new_job
+
+            # If a shift exists, add the user associated with the shift
+            if row['shift_user_first_name']:
+                job_dict[row['id']].shift_users.append(
+                    row['shift_user_first_name'])
+
+        return list(job_dict.values())
 
     @classmethod
     def get_one(cls, data):
@@ -90,6 +102,7 @@ class Job:
 
     @classmethod
     def getJobWithShifts(cls, data):
+        from ..models.user import User
         query = '''
 
             SELECT *, TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time

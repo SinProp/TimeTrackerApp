@@ -65,10 +65,10 @@
                             <div class="form-group">
                               <label for="status">Job Status:</label>
                               <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" name="status" id="status" value="1" {% if job.status == 1 %} checked {% endif %}>
-                                  <label class="form-check-label" for="status">
-                                      Active
-                                  </label>
+                                <select class="form-control" id="status" name="status" required>
+                                  <option value="1" {% if job.status == 1 %}selected{% endif %}>Active</option>
+                                  <option value="0" {% if job.status == 0 %}selected{% endif %}>Inactive</option>
+                              </select>
                               </div>
 
                             </div>

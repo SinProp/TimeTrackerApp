@@ -1,11 +1,9 @@
 from flask import render_template, redirect, session, request, flash, url_for, Blueprint, jsonify
-# import smartsheet
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
 from datetime import datetime
-# from ..config.config import ss_client
 
 dateFormat = "%m/%d/%Y %I:%M %p"
 
@@ -38,71 +36,12 @@ def create_job():
     return redirect('/dashboard')
 
 
-@app.route('/edit/job/<int:id>')
-def edit_job(id):
+@app.route('/dashboard', endpoint='jobs_dashboard')
+def dashboard():
     if 'user_id' not in session:
         return redirect('/logout')
-    data = {
-        "id": id
-    }
-    user_data = {
-        "id": session['user_id']
-    }
-    return render_template("edit_job.html",
-                           job=Job.get_one(data),
-                           user=User.get_by_id(user_data))
-
-
-@app.route('/update/job/<int:id>', methods=['POST'])
-def update_job(id):
-    if 'user_id' not in session:
-        return redirect('/logout')
-    if not Job.validate_job(request.form):
-        return redirect(f'/update/job/{{job.id}}')
-
-    # Check if the "status" field is in the form data
-    if 'status' in request.form:
-        status = 1  # Active
-    else:
-        status = 0  # Inactive
-
-    data = {
-        "im_number": request.form["im_number"],
-        "general_contractor": request.form["general_contractor"],
-        "job_scope": request.form["job_scope"],
-        "estimated_hours": request.form["estimated_hours"],
-        "context": request.form["context"],
-        "id": request.form['id'],
-        "status": 1 if 'status' in request.form else 0
-    }
-    Job.update(data)
-    return redirect('/dashboard')
-
-
-@app.route('/api/process-approved-jobs', methods=['POST'])
-def process_approved_jobs():
-    try:
-        # Get approved jobs from Smartsheet
-        approved_jobs = Job.get_approved_jobs_from_smartsheet()
-        print(f"Retrieved {len(approved_jobs)} Approved jobs from Smartsheet.")
-
-        # Process each approved job
-        for job in approved_jobs:
-            print(f"Processing job with IM number: {job['im_number']}")
-            # Check if the IM number exists
-            if not Job.check_im_number_exists({'im_number': job['im_number']}):
-                print(
-                    f"IM number {job['im_number']} does not exist in the database. Adding new record.")
-                # Add a new record
-                Job.add_new_record(job)
-
-            else:
-                (f"IM number {job['im_number']} already exists in the database. Skipping.")
-
-        print("Finished processing approved jobs.")
-        return jsonify({"message": "Approved jobs processed successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    jobs = Job.get_all()
+    return render_template('dashboard.html', jobs=jobs)
 
 
 @app.route('/show/job/<int:id>')
@@ -134,6 +73,66 @@ def get_one(id):
                            job=Job.get_one(data),
                            user=User.get_by_id(user_data),
                            total_elapsed_seconds=total_elapsed_seconds)
+
+
+@app.route('/edit/job/<int:id>')
+def edit_job(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    data = {
+        "id": id
+    }
+    job = Job.get_one(data)
+    if job.user_id != session['user_id']:
+        flash("You can only edit your own jobs.")
+        return redirect('/dashboard')
+    return render_template('edit_job.html', job=job)
+
+
+@app.route('/update/job/<int:id>', methods=['POST'])
+def update_job(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    if not Job.validate_job(request.form):
+        return redirect(f"/edit/job/{id}")
+    data = {
+        "id": id,
+        "im_number": request.form["im_number"],
+        "general_contractor": request.form["general_contractor"],
+        "job_scope": request.form["job_scope"],
+        "estimated_hours": request.form["estimated_hours"],
+        "context": request.form["context"],
+        "status": request.form["status"],
+        "user_id": session["user_id"]
+    }
+    Job.update(data)
+    return redirect('/dashboard')
+
+
+@app.route('/api/process-approved-jobs', methods=['POST'])
+def process_approved_jobs():
+    try:
+        # Get approved jobs from Smartsheet
+        approved_jobs = Job.get_approved_jobs_from_smartsheet()
+        print(f"Retrieved {len(approved_jobs)} Approved jobs from Smartsheet.")
+
+        # Process each approved job
+        for job in approved_jobs:
+            print(f"Processing job with IM number: {job['im_number']}")
+            # Check if the IM number exists
+            if not Job.check_im_number_exists({'im_number': job['im_number']}):
+                print(
+                    f"IM number {job['im_number']} does not exist in the database. Adding new record.")
+                # Add a new record
+                Job.add_new_record(job)
+
+            else:
+                (f"IM number {job['im_number']} already exists in the database. Skipping.")
+
+        print("Finished processing approved jobs.")
+        return jsonify({"message": "Approved jobs processed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/destroy/job/<int:id>')

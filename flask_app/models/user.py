@@ -50,7 +50,7 @@ class User:
             flash("Invalid email address!")
             is_valid = False
 
-        query = f"SELECT * FROM users WHERE email = %(email)s;"
+        query = "SELECT * FROM users WHERE email = %(email)s;"
 
         results = connectToMySQL(User.db).query_db(query, data)
         if len(results) >= 1:
