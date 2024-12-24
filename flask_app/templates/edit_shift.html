@@ -46,7 +46,6 @@
                     
                     <h4 class="mb-3" id='buy'> Shift ID: *{{ shift.id }}*</h4>
                     <h4 class="mb-3" id='buy'> IM Number: {{ job.im_number }}</h4>
-
                     <br/>
 
                     <h4 class="center-text" id='buy'>Edit a Shift</h4>
@@ -79,12 +78,21 @@
                                     <div class="form-group center-text">
                                         <label for='shift id'></label>
                                         <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
-                                        <input type="hidden" name="job_id" value="{{ job.id }}">
+                                        <!-- <input type="hidden" name="job_id" value="{{ job.id }}"> -->
 
                                     </div>
                                     <div class="form-group">
                                         <label for="note">Note: </label>
                                         <input type="text" name="note" class="form-control" value="{{shift.note}}"></textarea>
+                                    </div>
+                                    <!-- Add a dropdown to select a new IM Number below the note input -->
+                                    <div class="form-group">
+                                        <label for="job_id">Reassign This shift to a different IM #:</label>
+                                        <select name="job_id" class="form-control">
+                                            {% for job in jobs %}
+                                                <option value="{{ job.id }}" {% if job.id == shift.job_id %}selected{% endif %}>{{ job.im_number }}</option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
                             <div class= "d-flex justify-content-center">
                                     <input type="submit" value="Update" class="btn btn-primary">

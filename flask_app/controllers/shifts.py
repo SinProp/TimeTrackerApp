@@ -18,7 +18,7 @@ def new_shift(id):
     logged_in_user = User.get_by_id(data)
 
     # Check if the logged-in user is an admin
-    if logged_in_user.department == 'ADMINISTRATIVE':
+    if (logged_in_user.department == 'ADMINISTRATIVE'):
         users = User.get_all()  # Get all users if the user is an admin
     else:
         users = None  # Set users to None if not an admin
@@ -97,7 +97,7 @@ def shift_report():
             int(hours), int(minutes), int(seconds))
         print(formatted_elapsed_time)
 
-        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data), total_elapsed_time_hms=total_elapsed_time_hms, formatted_elapsed_time=total_elapsed_time, start_date=data['start_date'], end_date=data['end_date'])
+        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data), total_elapsed_time_hms=total_elapsed_time_hms, formatted_elapsed_time=formatted_elapsed_time, start_date=data['start_date'], end_date=data['end_date'])
     else:
         return render_template('shift_report.html', user=User.get_by_id(user_data))
 
@@ -158,8 +158,9 @@ def edit_shift(id):
     }
 
     job = Job.get_one(job_data)  # fetch the job associated with this shift
+    jobs = Job.get_all()  # Fetch all jobs to populate the dropdown
 
-    return render_template("edit_shift.html", shift=shift, job=job, user=User.get_by_id(user_data))
+    return render_template("edit_shift.html", shift=shift, job=job, jobs=jobs, user=User.get_by_id(user_data))
 
 
 @app.route('/update/shift/<int:id>', methods=['POST'])
@@ -181,9 +182,12 @@ def update_shift(id):
     else:
         updated_at = None  # Allow updated_at to be None
 
+    job_id = request.form.get('job_id')
+    print(f"Received job_id: {job_id}")  # Debugging statement
+
     data = {
         "id": id,
-        "job_id": request.form['job_id'],
+        "job_id": job_id,
         "created_at": created_at,
         "updated_at": updated_at,  # Can be None
         "note": request.form['note']
@@ -191,7 +195,6 @@ def update_shift(id):
 
     Shift.update_time(data)
 
-    job_id = request.form['job_id']
     return redirect(f'/show/job/{job_id}')
 
 

@@ -147,7 +147,16 @@ class Shift:
 
     @classmethod
     def update_time(cls, data):
-        query = "UPDATE shifts SET created_at = %(created_at)s, updated_at = %(updated_at)s, note = %(note)s WHERE id = %(id)s;"
+        query = """
+        UPDATE shifts 
+        SET created_at = %(created_at)s, 
+            updated_at = %(updated_at)s, 
+            note = %(note)s, 
+            job_id = %(job_id)s 
+        WHERE id = %(id)s;
+        """
+        print(
+            f"Executing update query with data: {data}")  # Debugging statement
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
