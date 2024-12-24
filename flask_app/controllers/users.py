@@ -75,3 +75,66 @@ def dashboard():
     started_today = shift.Shift.get_started_today()
 
     return render_template("dashboard.html", jobs=job.Job.get_all(), logged_in_user=user.User.get_by_id(data), started_today=started_today)
+
+
+@app.route('/manage_users')
+def manage_users():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {
+        "id": session['user_id']
+    }
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        return redirect('/dashboard')
+    users = User.get_all()
+    return render_template('manage_users.html', users=users)
+
+
+@app.route('/edit/user/<int:id>')
+def edit_user(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {
+        "id": session['user_id']
+    }
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        return redirect('/dashboard')
+    user_to_edit = User.get_by_id({"id": id})
+    return render_template('edit_user.html', user=user_to_edit)
+
+
+@app.route('/update/user/<int:id>', methods=['POST'])
+def update_user(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {
+        "id": session['user_id']
+    }
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        return redirect('/dashboard')
+    data = {
+        "id": id,
+        "first_name": request.form["first_name"],
+        "last_name": request.form["last_name"],
+        "email": request.form["email"],
+        "department": request.form["department"]
+    }
+    User.update(data)
+    return redirect('/manage_users')
+
+
+@app.route('/destroy/user/<int:id>', methods=['POST'])
+def destroy_user(id):
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {
+        "id": session['user_id']
+    }
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        return redirect('/dashboard')
+    User.soft_delete({"id": id})
+    return redirect('/manage_users')

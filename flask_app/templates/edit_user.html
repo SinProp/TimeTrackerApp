@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit User</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <header>
+        <div class="navbar-dark box-shadow" style="background-color: #00FFFF;">
+            <div class="container text-center">
+                <a href="#" class="navbar-brand align-items-center">
+                    <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                        <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                    </svg>
+                    <strong style="color: F5DEB3;"><span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main role="main">
+        <section class="jumbotron text-center">
+            <div class="container">
+                <h1 class="jumbotron-heading">Edit User</h1>
+                <a href="/manage_users" class="btn btn-primary my-2">Back to Manage Users</a>
+            </div>
+        </section>
+
+        <div class="container">
+            <form action="/update/user/{{ user.id }}" method="POST" class="col-11 p-4 my-4 bg-dark text-light mx-auto">
+                <h4 class="mb-3">Edit User Details</h4>
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                </div>
+                <div class="form-group">
+                    <label for="department">Department:</label>
+                    <input type="text" name="department" class="form-control" value="{{ user.department }}">
+                </div>
+                <input type="submit" value="Update User" class="btn btn-primary">
+            </form>
+        </div>
+    </main>
+</body>
+</html>

@@ -19,6 +19,7 @@ class User:
         self.password = data['password']
         self.created_at = data['created_at']
         self.updated_at = data['updated_at']
+        self.deleted_date = data['deleted_date'] if 'deleted_date' in data else None
         self.shifts = []
 
         # class methods go below
@@ -83,7 +84,7 @@ class User:
 
     @classmethod
     def get_all(cls):
-        query = "SELECT * FROM users;"
+        query = "SELECT * FROM users WHERE deleted_date IS NULL;"
         results = connectToMySQL(cls.db).query_db(query)
         all_users = []
         for row in results:
@@ -151,3 +152,25 @@ class User:
             is_valid = False
             flash('A password is required', 'error')
         return is_valid
+
+    @classmethod
+    def update(cls, data):
+        query = """
+        UPDATE users 
+        SET first_name = %(first_name)s, 
+            last_name = %(last_name)s, 
+            email = %(email)s, 
+            department = %(department)s 
+        WHERE id = %(id)s;
+        """
+        return connectToMySQL(cls.db).query_db(query, data)
+
+    @classmethod
+    def soft_delete(cls, data):
+        query = "UPDATE users SET deleted_date = NOW() WHERE id = %(id)s;"
+        return connectToMySQL(cls.db).query_db(query, data)
+
+    @classmethod
+    def destroy(cls, data):
+        query = "DELETE FROM users WHERE id = %(id)s;"
+        return connectToMySQL(cls.db).query_db(query, data)
