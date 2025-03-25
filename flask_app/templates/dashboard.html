@@ -2,33 +2,148 @@
 <html>
 <head>
     <title>Island Time Dashboard</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/5.5.0-alpha1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iVG93xBfZlPH94m5bscu3ILjFwFuvkkX/+y7cG0yWR/uAdwFzu+5V4JKJ" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-      .button-spacing {
-          margin-bottom: 10px;
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --accent-color: #f39c12;
+        --dark-color: #2c3e50;
+        --light-color: #ecf0f1;
       }
-      .highlight { background-color: yellow; }
+      
+      body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      
+      .custom-header {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        padding: 15px 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      
+      .jumbotron {
+        background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8)), 
+                    url('/static/img/IMLOGO.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        padding: 4rem 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      }
+      
+      .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+      }
+      
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+      }
+      
+      .btn {
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+      
+      .btn-success {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+      
+      .btn-warning {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: white;
+      }
+      
+      .btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+      
+      .highlight { 
+        background-color: #ffeb3b; 
+        border-radius: 3px;
+        padding: 2px 5px;
+      }
+      
       .search-container {
-          margin-top: 10px;
+        margin-top: 20px;
+        margin-bottom: 30px;
+      }
+      
+      .search-box {
+        border-radius: 30px;
+        padding: 10px 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      
+      .section-heading {
+        position: relative;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+      }
+      
+      .section-heading:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      }
+      
+      .badge-active {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+      }
+      
+      .logo-footer {
+        max-height: 100px;
+        margin-top: 30px;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+      }
+      
+      .logo-footer:hover {
+        opacity: 1;
       }
     </style>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.5.0-alpha1/js/bootstrap.min.js" integrity="sha384-2C4l5qVdt4NK6nSi4JhptOqF4H36mO6Wn68qd5FCKfGWuqUG7SgnqMBGz+rqP1A5" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-    <header>
-        <div class="navbar-dark box-shadow" style="background-color: #00FFFF;">
-            <div class="container text-center">
-                <a href="#" class="navbar-brand align-items-center">
-                    <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
-                        <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
-                    </svg>
-                    <strong style="color: F5DEB3;"><span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
-                </a>
-            </div>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="#" class="navbar-brand d-flex justify-content-center align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">by Island Millwork Inc</span></strong>
+            </a>
         </div>
     </header>
 
@@ -61,102 +176,151 @@
 
         <section class="jumbotron text-center">
             <div class="container">
-                <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
-                <p class="lead text-muted">In order to accurately determine if we are estimating the right amount of labor on any given job, this app will gather data on hours logged and compare that total to what was estimated.</p>
-                <p>
+                <h1 class="display-4 fw-bold mb-3">Man-Hour Job Costing Application</h1>
+                <p class="lead text-muted mb-4">Track and analyze labor hours to improve cost estimations for future projects.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
                     {% if logged_in_user.department == 'ADMINISTRATIVE' %}
-                        <a href="/manage_shifts" class="btn btn-primary">Manage Shifts</a>
-                        <a href="/new/job" class="btn btn-success my-2">Add a new IM #</a>
-                        <a href="/manage_users" class="btn btn-warning my-2">Manage Users</a> <!-- New button to manage users -->
+                        <a href="/manage_shifts" class="btn btn-primary"><i class="fas fa-tasks me-2"></i>Manage Shifts</a>
+                        <a href="/new/job" class="btn btn-success"><i class="fas fa-plus-circle me-2"></i>Add New IM #</a>
+                        <a href="/manage_users" class="btn btn-warning"><i class="fas fa-users me-2"></i>Manage Users</a>
                     {% endif %}
-                    <a href="/end_of_day" class="btn btn-primary my-2">E.O.D. Punch Out</a>
-                    <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
-                    <a href="/logout" class="btn btn-danger my-2">Logout</a>
-                </p>
-                <br>
-                <h3 class="center-text">Welcome Back, {{ logged_in_user.first_name }}</h3>
-                <h4 style="color: green;">Number of shifts started today: {{ started_today }}</h4>
+                    <a href="/end_of_day" class="btn btn-primary"><i class="fas fa-clock me-2"></i>E.O.D. Punch Out</a>
+                    <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark"><i class="fas fa-table me-2"></i>View SmartSheet</a>
+                    <a href="/logout" class="btn btn-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                </div>
+                <div class="mt-4">
+                    <h3 class="fw-light">Welcome Back, <span class="fw-bold text-primary">{{ logged_in_user.first_name }}</span></h3>
+                    <div class="badge bg-success fs-6 mt-2 py-2 px-3">
+                        <i class="fas fa-chart-line me-2"></i>Shifts started today: {{ started_today }}
+                    </div>
+                </div>
             </div>
         </section>
 
-        <div class="album py-5 bg-light">
-            <div class="container align-items-center">
-                <!-- Active Jobs Grid -->
-                <h4 class="mb-3 center-text text-center" id='buy'>Active Jobs Board</h4>
-                <div class="row justify-content-center">
-                    <div class="col-md-6">
-                        <input type="text" id="searchText" class="form-control" placeholder="Search...">
-                    </div>
-                    <div class="col-md-auto">
-                        <button onclick="searchTextOnPage()" class="btn btn-primary">Search</button>
-                    </div>
-                </div>
-
-                <div class="row mt-4">
-                    {% for job in jobs %}
-                        {% if job.status == 1 %}
-                        <div class="col-md-4 mb-4">
-                            <div class="card h-100">
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title">IM #: {{ job.im_number }}</h5>
-                                    <h6 class="card-subtitle mb-2 text-muted">{{ job.general_contractor }}</h6>
-                                    <p class="card-text">{{ job.job_scope }}</p>
-                                    <p class="card-text"><strong>Active Today:</strong> 
-                                        {% if job.shift_users and job.shift_users|length > 0 %}
-                                            {% for shift_user in job.shift_users %}
-                                                {{ shift_user }}{% if not loop.last %}, {% endif %}
-                                            {% endfor %}
-                                        {% else %}
-                                            No one signed in today
-                                        {% endif %}
-                                    </p>
-                                    <div class="mt-auto">
-                                        <a href="/show/job/{{ job.id }}" class="btn btn-primary mb-2">View Job</a>
-                                        <a href="/add/shift/{{ job.id }}" class="btn btn-info mb-2">Start a Shift</a>
-                                        {% if logged_in_user.department == 'ADMINISTRATIVE' %}
-                                            <a class="btn btn-success mb-2" href="/edit/job/{{job.id}}">Edit</a>
-                                            <a class="btn btn-danger mb-2" href="/destroy/job/{{job.id}}">Delete</a>
-                                        {% endif %}
-                                    </div>
+        <!-- IM# Quick Jump Feature -->
+        <div class="container mt-4 mb-4">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body py-3">
+                            <form class="d-flex align-items-center" id="jumpToIMForm">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark text-white border-0">
+                                        <i class="fas fa-search-location"></i>
+                                    </span>
+                                    <input type="text" id="imNumberInput" class="form-control form-control-lg border-0" 
+                                        placeholder="Enter IM#" pattern="\d{4}" maxlength="4" inputmode="numeric">
+                                    <button class="btn btn-dark px-4" type="submit">
+                                        <i class="fas fa-arrow-right me-2"></i>Go
+                                    </button>
                                 </div>
-                            </div>
+                            </form>
                         </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-
-                <!-- Inactive Jobs Grid -->
-                <h4 class="mb-3 center-text" id='buy'>Inactive Jobs Board</h4>
-                <div style="text-align: center; width: 100%;">
-                    <button class="btn btn-secondary mb-2" type="button" id="toggleInactiveJobs">Show Inactive Jobs Board</button>
-                </div>
-                <div class="collapse" id="inactiveJobsTable">
-                    <div class="row mt-4">
-                        {% for job in jobs %}
-                            {% if job.status == 0 %}
-                            <div class="col-md-4 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title">IM #: {{ job.im_number }}</h5>
-                                        <h6 class="card-subtitle mb-2 text-muted">{{ job.general_contractor }}</h6>
-                                        <p class="card-text">{{ job.job_scope }}</p>
-                                        <div class="mt-auto">
-                                            <a href="/show/job/{{ job.id }}" class="btn btn-primary mb-2">View Job</a>
-                                            <a href="/add/shift/{{ job.id }}" class="btn btn-info mb-2">Start a Shift</a>
-                                            {% if logged_in_user.department == 'ADMINISTRATIVE' %}
-                                                <a class="btn btn-success mb-2" href="/edit/job/{{job.id}}">Edit</a>
-                                                <a class="btn btn-danger mb-2" href="/destroy/job/{{job.id}}">Delete</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
                     </div>
                 </div>
             </div>
-            <img src="/static/img/IMLOGO.png" class="img rounded mx-auto d-block" alt="Company Logo">
+        </div>
+
+        <div class="py-5">
+            <div class="container">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs nav-fill mb-4" id="jobTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-jobs" 
+                            type="button" role="tab" aria-controls="active-jobs" aria-selected="true">
+                            <i class="fas fa-briefcase me-2"></i>Active Jobs
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="inactive-tab" data-bs-toggle="tab" data-bs-target="#inactive-jobs" 
+                            type="button" role="tab" aria-controls="inactive-jobs" aria-selected="false">
+                            <i class="fas fa-archive me-2"></i>Inactive Jobs
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab Content -->
+                <div class="tab-content" id="jobTabsContent">
+                    <!-- Active Jobs Tab -->
+                    <div class="tab-pane fade show active" id="active-jobs" role="tabpanel" aria-labelledby="active-tab">
+                        <h2 class="section-heading text-center mb-4">Active Jobs Board</h2>
+                        
+                        <div class="row g-4 mt-2">
+                            {% for job in jobs %}
+                                {% if job.status == 1 %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
+                                                <span class="badge badge-active">Active</span>
+                                            </div>
+                                            <h6 class="card-subtitle mb-3 text-muted">{{ job.general_contractor }}</h6>
+                                            <p class="card-text">{{ job.job_scope }}</p>
+                                            <div class="mt-2 mb-3">
+                                                <strong><i class="fas fa-user-clock me-2"></i>Active Today:</strong> 
+                                                <span class="text-primary">
+                                                {% if job.shift_users and job.shift_users|length > 0 %}
+                                                    {% for shift_user in job.shift_users %}
+                                                        {{ shift_user }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    No one signed in today
+                                                {% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="mt-auto d-flex flex-wrap gap-2">
+                                                <a href="/show/job/{{ job.id }}" class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i>View</a>
+                                                <a href="/add/shift/{{ job.id }}" class="btn btn-sm btn-info text-white"><i class="fas fa-play me-1"></i>Start Shift</a>
+                                                {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                                                    <a class="btn btn-sm btn-success" href="/edit/job/{{job.id}}"><i class="fas fa-edit me-1"></i>Edit</a>
+                                                    <a class="btn btn-sm btn-danger" href="/destroy/job/{{job.id}}"><i class="fas fa-trash me-1"></i>Delete</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Inactive Jobs Tab -->
+                    <div class="tab-pane fade" id="inactive-jobs" role="tabpanel" aria-labelledby="inactive-tab">
+                        <h2 class="section-heading text-center mb-4">Inactive Jobs Board</h2>
+                        
+                        <div class="row g-4 mt-2">
+                            {% for job in jobs %}
+                                {% if job.status == 0 %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="card h-100 bg-light">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
+                                                <span class="badge bg-danger">Inactive</span>
+                                            </div>
+                                            <h6 class="card-subtitle mb-3 text-muted">{{ job.general_contractor }}</h6>
+                                            <p class="card-text">{{ job.job_scope }}</p>
+                                            <div class="mt-auto d-flex flex-wrap gap-2">
+                                                <a href="/show/job/{{ job.id }}" class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i>View</a>
+                                                <a href="/add/shift/{{ job.id }}" class="btn btn-sm btn-info text-white"><i class="fas fa-play me-1"></i>Start Shift</a>
+                                                {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                                                    <a class="btn btn-sm btn-success" href="/edit/job/{{job.id}}"><i class="fas fa-edit me-1"></i>Edit</a>
+                                                    <a class="btn btn-sm btn-danger" href="/destroy/job/{{job.id}}"><i class="fas fa-trash me-1"></i>Delete</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Company Logo">
+            </div>
         </div>
     </main>
 
@@ -190,10 +354,64 @@
         document.addEventListener("DOMContentLoaded", function () {
             var toggleInactiveJobs = document.getElementById("toggleInactiveJobs");
             var inactiveJobsTable = document.getElementById("inactiveJobsTable");
+            var toggleIcon = document.getElementById("toggleIcon");
         
             toggleInactiveJobs.addEventListener("click", function () {
-                inactiveJobsTable.classList.toggle("collapse");
+                inactiveJobsTable.classList.toggle("show");
+                // Toggle icon direction
+                if (inactiveJobsTable.classList.contains("show")) {
+                    toggleIcon.classList.replace("fa-chevron-down", "fa-chevron-up");
+                    toggleInactiveJobs.innerHTML = toggleInactiveJobs.innerHTML.replace("Show", "Hide");
+                } else {
+                    toggleIcon.classList.replace("fa-chevron-up", "fa-chevron-down");
+                    toggleInactiveJobs.innerHTML = toggleInactiveJobs.innerHTML.replace("Hide", "Show");
+                }
             });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var togglePDF = document.querySelector('[data-bs-target="#pdfCollapse"]');
+            if(togglePDF) {
+                var pdfCollapse = document.getElementById('pdfCollapse');
+
+                togglePDF.addEventListener("click", function () {
+                    pdfCollapse.classList.toggle("show");
+                });
+            }
+        });
+
+        // IM# Quick Jump Functionality
+        document.getElementById('jumpToIMForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const imNumber = document.getElementById('imNumberInput').value;
+            if(imNumber.length === 4 && /^\d+$/.test(imNumber)) {
+                // Find all job cards
+                const jobCards = document.querySelectorAll('.card');
+                let found = false;
+                
+                // Look through cards to find matching IM number
+                jobCards.forEach(card => {
+                    const cardTitle = card.querySelector('.card-title');
+                    if(cardTitle && cardTitle.textContent.includes(imNumber)) {
+                        // If inactive jobs are hidden and this is an inactive job, show the inactive tab
+                        if(card.closest('#inactive-jobs') && !document.getElementById('inactive-jobs').classList.contains('show')) {
+                            document.getElementById('inactive-tab').click();
+                        }
+                        
+                        // Highlight and scroll to the matching card
+                        card.classList.add('border-primary', 'border-3');
+                        setTimeout(() => {
+                            card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            setTimeout(() => card.classList.remove('border-primary', 'border-3'), 3000);
+                        }, 300);
+                        found = true;
+                    }
+                });
+                
+                if(!found) {
+                    alert('IM Number ' + imNumber + ' not found.');
+                }
+            }
         });
 
         document.addEventListener("DOMContentLoaded", function () {
