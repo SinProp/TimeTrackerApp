@@ -311,3 +311,117 @@ def destroy_shift(id):
     }
     Shift.destroy(data)
     return redirect('/dashboard')
+
+
+@app.route('/batch_assign_shifts', methods=['GET', 'POST'])
+def batch_assign_shifts():
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    # Check if user is admin
+    user_data = {"id": session['user_id']}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        flash("You don't have permission to access this feature", "danger")
+        return redirect('/dashboard')
+
+    if request.method == 'POST':
+        # Process the form submission
+        user_ids = request.form.getlist('user_ids')
+        job_id = request.form['job_id']
+        note = request.form.get('note', '')
+
+        # Validate start_time format
+        try:
+            start_time_str = request.form.get('start_time')
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            # Convert to the format expected by our database
+            start_time = start_time.strftime('%Y-%m-%d %H:%M:%S')
+        except (ValueError, TypeError):
+            flash("Invalid start time format", "danger")
+            return redirect('/batch_assign_shifts')
+
+        # Validation
+        if not user_ids:
+            flash('Please select at least one employee', 'danger')
+            return redirect('/batch_assign_shifts')
+
+        if not job_id:
+            flash('Please select a job', 'danger')
+            return redirect('/batch_assign_shifts')
+
+        # Get job info for the success message
+        job_data = {"id": int(job_id)}
+        job_info = Job.get_one(job_data)
+
+        # Create shifts for all selected users
+        success_count = 0
+        error_count = 0
+
+        for user_id in user_ids:
+            shift_data = {
+                'job_id': job_id,
+                'user_id': user_id,
+                'note': note,
+                'start_time': start_time
+            }
+
+            try:
+                # End any ongoing shift for this user
+                Shift.end_current_shift(user_id)
+
+                # Create a new shift
+                Shift.save(shift_data)
+                success_count += 1
+            except Exception as e:
+                # Log the error
+                print(f"Error creating shift for user {user_id}: {str(e)}")
+                error_count += 1
+
+        # Prepare success/error message
+        if success_count > 0:
+            flash(
+                f'Successfully created {success_count} shifts for IM #{job_info.im_number}', 'success')
+        if error_count > 0:
+            flash(f'Failed to create {error_count} shifts', 'danger')
+
+        return redirect('/batch_assign_shifts')
+
+    # GET request - show the form
+    users = User.get_all()
+    jobs = Job.get_all()
+
+    # Add department distribution statistics for UX enhancement
+    department_counts = {}
+    for user in users:
+        if user.department not in department_counts:
+            department_counts[user.department] = 0
+        department_counts[user.department] += 1
+
+    return render_template('batch_assign_shifts.html',
+                           users=users,
+                           jobs=jobs,
+                           logged_in_user=logged_in_user,
+                           department_counts=department_counts)
+
+
+@app.route('/batch_punch_out', methods=['POST'])
+def batch_punch_out():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        flash("You don't have permission to access this feature", "danger")
+        return redirect('/dashboard')
+    shift_ids = request.form.getlist("shift_ids")
+    success_count = 0
+    for shift_id in shift_ids:
+        try:
+            # End the shift by updating updated_at to current time
+            Shift.update({"id": shift_id})
+            success_count += 1
+        except Exception as e:
+            print(f"Error punching out shift {shift_id}: {str(e)}")
+    flash(f"Successfully punched out {success_count} shifts", "success")
+    return redirect('/end_of_day')

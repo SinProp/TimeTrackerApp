@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Batch Assign Shifts</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --accent-color: #f39c12;
+        --dark-color: #2c3e50;
+        --light-color: #ecf0f1;
+      }
+      
+      body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      
+      .custom-header {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        padding: 15px 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      
+      .jumbotron {
+        background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8)), 
+                    url('/static/img/IMLOGO.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        padding: 4rem 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      }
+      
+      .form-card {
+        background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+        border-radius: 15px;
+        overflow: hidden;
+        padding: 30px;
+        color: white;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      
+      .form-title {
+        position: relative;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+        color: white;
+        font-weight: 600;
+      }
+      
+      .form-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background-color: var(--accent-color);
+      }
+      
+      .form-control {
+        border-radius: 30px;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.1);
+      }
+      
+      .form-control:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.25rem rgba(243, 156, 18, 0.25);
+      }
+      
+      .btn {
+        border-radius: 30px;
+        padding: 10px 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+      
+      .btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+      
+      .logo-footer {
+        max-height: 100px;
+        margin-top: 30px;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+      }
+      
+      .logo-footer:hover {
+        opacity: 1;
+      }
+      
+      .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+      
+      .user-card {
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 15px;
+        transition: all 0.3s ease;
+      }
+      
+      .user-card:hover {
+        background-color: rgba(255,255,255,0.2);
+      }
+      
+      .select-all-container {
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 10px;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="#" class="navbar-brand d-flex justify-content-center align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">by Island Millwork Inc</span></strong>
+            </a>
+        </div>
+    </header>
+  
+    <main role="main">
+        <section class="jumbotron text-center">
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-3">Batch Shift Assignment</h1>
+                <p class="lead text-muted mb-4">Quickly assign multiple team members to a job.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                    <a href="/dashboard" class="btn btn-primary"><i class="fas fa-home me-2"></i>Job Dashboard</a>
+                    <a href="/manage_shifts" class="btn btn-success"><i class="fas fa-tasks me-2"></i>Manage Shifts</a>
+                    <a href="/logout" class="btn btn-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-4 fw-bold">Assign Multiple Workers to a Job</h2>
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                                <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <div class="form-card">
+                    <h4 class="form-title text-center">Create Multiple Shifts</h4>
+                    <form action="/batch_assign_shifts" method="post">
+                        
+                        <!-- Job Selection Section -->
+                        <div class="mb-4">
+                            <label for="job_id" class="form-label">Select Job:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark text-white border-0">
+                                    <i class="fas fa-hard-hat"></i>
+                                </span>
+                                <select name="job_id" id="job_id" class="form-select form-control" required>
+                                    <option value="" disabled selected>Choose a job...</option>
+                                    {% for job in jobs %}
+                                        {% if job.status == 1 %}
+                                        <option value="{{ job.id }}">IM #{{ job.im_number }} - {{ job.general_contractor }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Include inactive jobs in a separate optgroup -->
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="showInactiveJobs">
+                                <label class="form-check-label" for="showInactiveJobs">
+                                    Show inactive jobs
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Start Time Section -->
+                        <div class="mb-4">
+                            <label for="start_time" class="form-label">Start Time:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark text-white border-0">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <input type="datetime-local" id="start_time" name="start_time" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Department Filter -->
+                        <div class="mb-4">
+                            <label class="form-label">Filter by Department:</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-dark dept-filter active" data-dept="all">All</button>
+                                <button type="button" class="btn btn-sm btn-outline-light dept-filter" data-dept="CNC_SHOP">CNC Shop</button>
+                                <button type="button" class="btn btn-sm btn-outline-light dept-filter" data-dept="CUT_SHOP">Cut Shop</button>
+                                <button type="button" class="btn btn-sm btn-outline-light dept-filter" data-dept="FABRICATION">Fabrication</button>
+                                <button type="button" class="btn btn-sm btn-outline-light dept-filter" data-dept="PAINT_SHOP">Paint Shop</button>
+                                <button type="button" class="btn btn-sm btn-outline-light dept-filter" data-dept="ADMINISTRATIVE">Administrative</button>
+                            </div>
+                        </div>
+                        
+                        <!-- User Selection Section -->
+                        <div class="mb-4">
+                            <label class="form-label">Select Employees:</label>
+                            <div class="select-all-container">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label fw-bold" for="selectAll">Select All Employees</label>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-info" id="selectedCount">0 selected</span>
+                                </div>
+                            </div>
+                            
+                            <div class="user-grid mt-3">
+                                {% for user in users %}
+                                <div class="user-card" data-department="{{ user.department }}">
+                                    <div class="form-check">
+                                        <input class="form-check-input user-checkbox" type="checkbox" name="user_ids" value="{{ user.id }}" id="user{{ user.id }}">
+                                        <label class="form-check-label" for="user{{ user.id }}">
+                                            {{ user.first_name }} {{ user.last_name }}<br>
+                                            <small class="text-light">{{ user.department }}</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Notes Section -->
+                        <div class="mb-4">
+                            <label for="note" class="form-label">Notes (applies to all shifts):</label>
+                            <div class="input-group"></div>
+                                <span class="input-group-text bg-dark text-white border-0">
+                                    <i class="fas fa-sticky-note"></i>
+                                </span>
+                                <textarea name="note" id="note" rows="3" class="form-control" placeholder="Enter any relevant notes..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                                <i class="fas fa-play me-2"></i>Start All Shifts
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Company Logo">
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Set the current time when the page loads
+        document.addEventListener("DOMContentLoaded", function() {
+            // Format current datetime for datetime-local input
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('start_time').value = now.toISOString().slice(0,16);
+            
+            // Select All functionality
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const userCheckboxes = document.querySelectorAll('.user-checkbox');
+            const submitBtn = document.getElementById('submitBtn');
+            const selectedCountBadge = document.getElementById('selectedCount');
+            
+            // Department filtering
+            const deptFilters = document.querySelectorAll('.dept-filter');
+            const userCards = document.querySelectorAll('.user-card');
+            
+            // Job dropdown - hide inactive jobs initially
+            const jobSelect = document.getElementById('job_id');
+            const showInactiveJobs = document.getElementById('showInactiveJobs');
+            
+            // Create an array of inactive job options to hide initially
+            const inactiveJobs = [];
+            const optionElements = jobSelect.querySelectorAll('option');
+            optionElements.forEach(option => {
+                if (option.textContent.includes('[Inactive]')) {
+                    inactiveJobs.push(option);
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Show/hide inactive jobs
+            showInactiveJobs.addEventListener('change', function() {
+                inactiveJobs.forEach(option => {
+                    option.style.display = this.checked ? '' : 'none';
+                });
+            });
+            
+            // Update selected count and enable/disable submit button
+            function updateSelectedCount() {
+                const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+                selectedCountBadge.textContent = `${checkedCount} selected`;
+                submitBtn.disabled = checkedCount === 0 || !jobSelect.value;
+            }
+            
+            // Validate form can be submitted
+            function validateForm() {
+                const jobSelected = jobSelect.value !== "";
+                const usersSelected = document.querySelectorAll('.user-checkbox:checked').length > 0;
+                submitBtn.disabled = !(jobSelected && usersSelected);
+            }
+            
+            // Job selection change
+            jobSelect.addEventListener('change', validateForm);
+            
+            // Department filtering
+            deptFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    // Update active state
+                    deptFilters.forEach(btn => btn.classList.remove('active', 'btn-dark'));
+                    deptFilters.forEach(btn => btn.classList.add('btn-outline-light'));
+                    this.classList.remove('btn-outline-light');
+                    this.classList.add('active', 'btn-dark');
+                    
+                    const dept = this.getAttribute('data-dept');
+                    
+                    // Show/hide user cards based on department
+                    userCards.forEach(card => {
+                        if (dept === 'all' || card.getAttribute('data-department') === dept) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                            // Uncheck hidden cards
+                            const checkbox = card.querySelector('.user-checkbox');
+                            if (checkbox) checkbox.checked = false;
+                        }
+                    });
+                    
+                    // Update select all checkbox state
+                    updateSelectAllState();
+                    updateSelectedCount();
+                });
+            });
+            
+            // Update "Select All" state
+            function updateSelectAllState() {
+                // Only count visible checkboxes
+                const visibleCheckboxes = [...userCheckboxes].filter(checkbox => 
+                    checkbox.closest('.user-card').style.display !== 'none');
+                
+                const allChecked = visibleCheckboxes.length > 0 && 
+                                  visibleCheckboxes.every(c => c.checked);
+                const someChecked = visibleCheckboxes.some(c => c.checked);
+                
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+            
+            // Select All action
+            selectAllCheckbox.addEventListener('change', function() {
+                userCheckboxes.forEach(checkbox => {
+                    // Only change state of visible checkboxes
+                    if (checkbox.closest('.user-card').style.display !== 'none') {
+                        checkbox.checked = selectAllCheckbox.checked;
+                    }
+                });
+                updateSelectedCount();
+            });
+            
+            // Individual checkbox changes
+            userCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSelectAllState();
+                    updateSelectedCount();
+                });
+            });
+            
+            // Initial state
+            updateSelectedCount();
+        });
+    </script>
+</body>
+</html>
