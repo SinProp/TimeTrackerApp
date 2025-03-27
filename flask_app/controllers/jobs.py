@@ -101,7 +101,8 @@ def update_job(id):
         "general_contractor": request.form["general_contractor"],
         "job_scope": request.form["job_scope"],
         "estimated_hours": request.form["estimated_hours"],
-        "context": request.form["context"],
+        # Use get() with default value
+        "context": request.form.get("context", ""),
         "status": request.form["status"],
         "user_id": session["user_id"]
     }

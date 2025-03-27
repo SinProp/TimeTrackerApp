@@ -9,3 +9,23 @@ man_hours schema.mwb
 man_hours schema.mwb.bak
 
 .env
+
+# Python virtual environment
+venv/
+env/
+.venv/
+ENV/
+virtualenv/
+
+# Python byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints

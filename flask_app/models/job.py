@@ -181,12 +181,27 @@ class Job:
                 elif str(cell.column_id) == GC_COLUMN_ID:
                     job['general_contractor'] = cell.value
 
-            # Check if the Submittal Status is 'Approved' and all required details are present
-            if job.get('submittal_status') == 'Approved':
+            # Check if the Submittal Status is 'Approved' and IM number exists
+            if job.get('submittal_status') == 'Approved' and job.get('im_number'):
                 print(f"Approved status found in row {row.row_number}.")
-                if all(k in job for k in ('im_number', 'job_scope', 'general_contractor')):
-                    approved_jobs.append(job)
-                    print(f"Job added: {job}")
+
+                # Handle missing job scope
+                if 'job_scope' not in job or not job['job_scope']:
+                    print(
+                        f"Missing job scope for IM {job['im_number']}. Setting to 'See Work Order'")
+                    job['job_scope'] = "See Work Order"
+                # Handle job scope that exceeds database character limit (typically 255)
+                elif len(str(job['job_scope'])) > 255:
+                    print(
+                        f"Job scope for IM {job['im_number']} exceeds 255 characters. Setting to 'See Work Order'")
+                    job['job_scope'] = "See Work Order"
+
+                # Ensure general_contractor is present
+                if 'general_contractor' not in job or not job['general_contractor']:
+                    job['general_contractor'] = "Unknown"
+
+                approved_jobs.append(job)
+                print(f"Job added: {job}")
 
         print(f"Total approved jobs: {len(approved_jobs)}")
         return approved_jobs
