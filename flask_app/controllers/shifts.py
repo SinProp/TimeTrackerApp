@@ -380,12 +380,17 @@ def batch_assign_shifts():
 
         # Prepare success/error message
         if success_count > 0:
-            flash(
-                f'Successfully created {success_count} shifts for IM #{job_info.im_number}', 'success')
-        if error_count > 0:
-            flash(f'Failed to create {error_count} shifts', 'danger')
+            # Instead of redirecting back, render the confirmation page
+            if error_count > 0:
+                flash(f'Failed to create {error_count} shifts', 'danger')
 
-        return redirect('/batch_assign_shifts')
+            # Pass data to the confirmation template
+            return render_template('batch_confirmation.html',
+                                  success_count=success_count,
+                                  job=job_info)
+        else:
+            flash("No shifts were created", "danger")
+            return redirect('/batch_assign_shifts')
 
     # GET request - show the form
     users = User.get_all()
