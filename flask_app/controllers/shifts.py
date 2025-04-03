@@ -36,29 +36,60 @@ def create_shift():
         return redirect('/logout')
 
     if not Shift.validate_shift(request.form):
-        return redirect('/add/shift')
+        # Assuming validate_shift doesn't need changes for this fix
+        # If validation depends on start_time format, it might need adjustment too.
+        # For now, redirecting based on original logic.
+        # Consider what page is appropriate if validation fails.
+        # Maybe redirect back to the form page with an error message.
+        flash("Shift validation failed.", "danger") # Example flash message
+        # Determine the correct redirect target, e.g., back to the form
+        # return redirect('/add/shift/' + request.form.get('job_id', '')) # Example redirect
+        # For now, keeping original redirect logic if validation exists
+        return redirect('/add/shift/' + request.form.get('job_id', '')) # Adjust if needed
 
     job_id = request.form['job_id']
     note = request.form.get('note', '')
+    user_id = request.form['user_id']
 
-# Use the start time provided by the user, if available
-    start_time = request.form.get('start_time')
-    if not start_time:
+    # Use the start time provided by the user, if available
+    start_time_str = request.form.get('start_time')
+    if start_time_str:
+        try:
+            # Handle potential 'Z' for UTC timezone if present
+            if start_time_str.endswith('Z'):
+                start_time_str = start_time_str[:-1] + '+00:00'
+            # Parse the ISO format string (or similar format like YYYY-MM-DDTHH:MM)
+            # Using fromisoformat is generally robust for ISO 8601 formats
+            start_time_dt = datetime.fromisoformat(start_time_str)
+            # Format it to MySQL's expected format
+            start_time = start_time_dt.strftime('%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            # Handle cases where the date format is incorrect
+            flash("Invalid start time format provided.", "danger")
+            # Redirect back to the form or an appropriate error page
+            return redirect(f'/add/shift/{job_id}')
+    else:
         # If start time not provided, use current server time
         start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     shift_data = {
         'job_id': job_id,
-        'user_id': request.form['user_id'],
+        'user_id': user_id,
         'note': note,
-        'start_time': start_time
+        'start_time': start_time # Use the correctly formatted time
     }
 
     # End any ongoing shift for the user before starting a new one
-    Shift.end_current_shift(shift_data['user_id'])
+    Shift.end_current_shift(user_id)
 
-    # Save the shift with the start time provided by the user
-    Shift.save(shift_data)
+    # Save the shift
+    try:
+        Shift.save(shift_data)
+    except Exception as e:
+        # Log the error and inform the user
+        print(f"Error saving shift: {e}") # Log the specific DB error
+        flash("An error occurred while saving the shift. Please try again.", "danger")
+        return redirect(f'/add/shift/{job_id}')
 
     return redirect(f'/show/job/{job_id}')
 
@@ -117,8 +148,13 @@ def punch_out(shift_id):
         # Redirect with an error message if the user is not admin
         return redirect('/dashboard', error='Unauthorized access')
 
+    # Create a data dictionary with the shift ID
+    shift_data = {
+        "id": shift_id
+    }
+    
     # Method to end the shift with a specific ID in the Shift model
-    Shift.update(shift_id)
+    Shift.update(shift_data)
     return redirect('/dashboard')
 
 
@@ -430,3 +466,87 @@ def batch_punch_out():
             print(f"Error punching out shift {shift_id}: {str(e)}")
     flash(f"Successfully punched out {success_count} shifts", "success")
     return redirect('/end_of_day')
+
+
+@app.route('/todays_activity')
+def todays_activity():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    
+    user_data = {
+        "id": session['user_id']
+    }
+    
+    logged_in_user = User.get_by_id(user_data)
+    
+    # Get all ongoing shifts
+    ongoing_shifts = Shift.get_ongoing()
+    
+    # Fetch job details for each shift
+    for shift in ongoing_shifts:
+        job_data = {"id": shift.job_id}
+        shift.job = Job.get_one(job_data)
+    
+    # Get count of shifts started today
+    shifts_started_today = Shift.get_started_today()
+    
+    # Get shifts that ended today
+    today = datetime.now().strftime('%Y-%m-%d')
+    data = {
+        'start_date': today,
+        'end_date': today
+    }
+    completed_shifts = Shift.find_shifts_in_date_range(data)
+    
+    # Count of completed shifts today
+    shifts_ended_today = 0
+    if completed_shifts:
+        shifts_ended_today = sum(1 for shift in completed_shifts if shift.updated_at and shift.updated_at.date() == datetime.now().date())
+    print(f"DEBUG: Shifts ended today count: {shifts_ended_today}") # <-- Add this debug print
+    
+    # Total active workers
+    active_workers = len(ongoing_shifts)
+    
+    # Department-wise breakdown of active workers
+    department_breakdown = {}
+    if ongoing_shifts:
+        for shift in ongoing_shifts:
+            dept = shift.creator.department
+            if dept not in department_breakdown:
+                department_breakdown[dept] = 0
+            department_breakdown[dept] += 1
+    
+    # Calculate total hours logged today
+    total_hours_today = 0
+    if completed_shifts:
+        for shift in completed_shifts:
+            if shift.elapsed_time:
+                # Convert elapsed time string to seconds
+                try: # Add try-except block for robustness
+                    parts = str(shift.elapsed_time).split(':')
+                    if len(parts) == 3:
+                        hours = int(parts[0])
+                        minutes = int(parts[1])
+                        # Handle potential float seconds (e.g., '0:00:59.999999')
+                        seconds = int(float(parts[2]))
+                        total_seconds = hours * 3600 + minutes * 60 + seconds
+                        total_hours_today += total_seconds / 3600  # Convert to hours
+                    else:
+                        print(f"DEBUG: Invalid elapsed_time format for shift {shift.id}: {shift.elapsed_time}")
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error processing elapsed_time for shift {shift.id}: {shift.elapsed_time}, Error: {e}")
+    
+    # Format for display
+    hours, remainder = divmod(total_hours_today * 3600, 3600)  # Convert back to seconds for formatting
+    minutes, seconds = divmod(remainder, 60)
+    formatted_hours = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+    print(f"DEBUG: Total hours today (formatted): {formatted_hours}") # <-- Add this debug print
+    
+    return render_template('todays_activity.html',
+                          ongoing_shifts=ongoing_shifts,
+                          shifts_started_today=shifts_started_today,
+                          shifts_ended_today=shifts_ended_today,
+                          active_workers=active_workers,
+                          department_breakdown=department_breakdown,
+                          total_hours=formatted_hours,
+                          user=logged_in_user)

@@ -51,20 +51,33 @@ class Shift:
 
     @classmethod
     def find_shifts_in_date_range(cls, data):
+        # Ensure start_date and end_date cover the entire day
+        start_date_str = data['start_date'] + " 00:00:00"
+        end_date_str = data['end_date'] + " 23:59:59"
+
         query = '''
-            SELECT *, TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
+            SELECT shifts.*, users.*, 
+                   TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
             FROM shifts
-            JOIN users
-            ON shifts.user_id = users.id
-            WHERE shifts.created_at BETWEEN %(start_date)s AND %(end_date)s;
+            JOIN users ON shifts.user_id = users.id
+            WHERE shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s
+            AND shifts.updated_at IS NOT NULL; -- Ensure we only get completed shifts
         '''
-        results = connectToMySQL(cls.db_name).query_db(query, data)
+        
+        query_data = {
+            'start_date': start_date_str,
+            'end_date': end_date_str
+        }
+
+        results = connectToMySQL(cls.db_name).query_db(query, query_data)
 
         if not results:
-            return None
+            # Return an empty list instead of None for consistency
+            return [] 
 
         shifts = []
         for row in results:
+            # ... (rest of the parsing logic remains the same)
             shift_info = {
                 'id': row['id'],
                 'created_at': row['created_at'],
