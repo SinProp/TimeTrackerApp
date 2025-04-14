@@ -179,7 +179,10 @@
     <script>
         // Set the current time when the page loads
         document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById('start_time').value = new Date().toISOString();
+            // Format current datetime for datetime-local input (local time, not UTC)
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('start_time').value = now.toISOString().slice(0,16);
         });
     </script>
 </body>

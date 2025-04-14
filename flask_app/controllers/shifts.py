@@ -3,7 +3,7 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
@@ -41,20 +41,30 @@ def create_shift():
 
     job_id = request.form['job_id']
     note = request.form.get('note', '')
-    user_id = request.form['user_id']
+
+    if 'user_id' in request.form and request.form['user_id'] != str(session['user_id']):
+        logged_in_user_data = {"id": session['user_id']}
+        logged_in_user = User.get_by_id(logged_in_user_data)
+        if logged_in_user.department == 'ADMINISTRATIVE':
+            user_id = request.form['user_id']
+        else:
+            flash("Unauthorized action: Cannot start shift for another user.", "danger")
+            user_id = session['user_id']
+    else:
+        user_id = session['user_id']
 
     start_time_str = request.form.get('start_time')
     if start_time_str:
         try:
             if start_time_str.endswith('Z'):
-                start_time_str = start_time_str[:-1] + '+00:00'
-            start_time_dt = datetime.fromisoformat(start_time_str)
-            start_time = start_time_dt.strftime('%Y-%m-%d %H:%M:%S')
+                start_time_str = start_time_str.replace('Z', '+00:00')
+            start_time_dt_aware = datetime.fromisoformat(start_time_str)
+            start_time = start_time_dt_aware.strftime('%Y-%m-%d %H:%M:%S')
         except ValueError:
-            flash("Invalid start time format provided.", "danger")
+            flash("Invalid start time format received from form.", "danger")
             return redirect(f'/add/shift/{job_id}')
     else:
-        start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        start_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
     shift_data = {
         'job_id': job_id,
