@@ -63,7 +63,7 @@ class Shift:
             WHERE shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s
             AND shifts.updated_at IS NOT NULL; -- Ensure we only get completed shifts
         '''
-        
+
         query_data = {
             'start_date': start_date_str,
             'end_date': end_date_str
@@ -73,16 +73,17 @@ class Shift:
 
         if not results:
             # Return an empty list instead of None for consistency
-            return [] 
+            return []
 
         shifts = []
         for row in results:
-            # ... (rest of the parsing logic remains the same)
+            elapsed_time_val = row.get('elapsed_time')
+
             shift_info = {
                 'id': row['id'],
                 'created_at': row['created_at'],
                 'updated_at': row['updated_at'],
-                'elapsed_time': row['elapsed_time'],
+                'elapsed_time': elapsed_time_val,
                 'job_id': row['job_id'],
                 'user_id': row['user_id'],
                 'note': row['note'],
@@ -141,7 +142,6 @@ class Shift:
                 'first_name': row['first_name'],
                 'last_name': row['last_name'],
                 'email': row['email'],
-                # Consider security implications of this
                 'password': row['password'],
                 'department': row['department'],
                 'created_at': row['users_created_at'],
