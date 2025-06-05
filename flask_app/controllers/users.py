@@ -88,7 +88,35 @@ def manage_users():
     if logged_in_user.department != 'ADMINISTRATIVE':
         return redirect('/dashboard')
     users = User.get_all()
-    return render_template('manage_users.html', users=users)
+    show_add_form = request.args.get('show_add_form', default=False, type=bool)
+    return render_template('manage_users.html', users=users, show_add_form=show_add_form)
+
+
+@app.route('/create_user_admin', methods=['POST'])
+def create_user_admin():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {
+        'id': session['user_id']
+    }
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        return redirect('/dashboard')
+
+    if not User.validate_registration(request.form):
+        return redirect(url_for('manage_users', show_add_form=True))
+
+    pw_hash = bcrypt.generate_password_hash(request.form['password'])
+    data = {
+        'first_name': request.form['first_name'],
+        'last_name': request.form['last_name'],
+        'email': request.form['email'],
+        'department': request.form['department'],
+        'password': pw_hash
+    }
+    User.create_user(data)
+    flash('User created successfully', 'success')
+    return redirect('/manage_users')
 
 
 @app.route('/edit/user/<int:id>')
