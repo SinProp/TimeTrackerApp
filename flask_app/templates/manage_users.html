@@ -120,6 +120,70 @@
             </div>
         </section>
 
+        <div class="container my-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="accordion" id="addUserAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingAddUser">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddUser" aria-expanded="false" aria-controls="collapseAddUser">
+                            <i class="fas fa-user-plus me-2"></i>Add New User
+                        </button>
+                    </h2>
+                    <div id="collapseAddUser" class="accordion-collapse collapse {% if show_add_form %}show{% endif %}" aria-labelledby="headingAddUser" data-bs-parent="#addUserAccordion">
+                        <div class="accordion-body">
+                            <form action="/create_user_admin" method="POST" class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department" required>
+                                        <option value="CNC_SHOP">CNC Shop</option>
+                                        <option value="CUT_SHOP">Cut Shop</option>
+                                        <option value="FABRICATION">Fabrication</option>
+                                        <option value="PAINT_SHOP">Paint Shop</option>
+                                        <option value="ADMINISTRATIVE">Administrative</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" minlength="8" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8" required>
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create User
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="container">
             <div class="table-container">
                 <div class="table-responsive">
