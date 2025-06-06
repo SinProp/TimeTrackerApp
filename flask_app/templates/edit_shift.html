@@ -1,116 +1,164 @@
+<!DOCTYPE html>
 <html>
-<body>
 <head>
-    <title>Edit Punch Times</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <title>Edit Shift</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .custom-header {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .jumbotron {
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8)), url('/static/img/IMLOGO.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 4rem 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            padding: 30px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            color: white;
+            font-weight: 600;
+        }
+        .form-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+        .form-control,
+        .form-select {
+            border-radius: 30px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .logo-footer {
+            max-height: 100px;
+            margin-top: 30px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        .logo-footer:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
-
-    <header>
-        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
-        <div class="container text-center ">
-            <a href="#" class="navbar-brand align-items-center">
-                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
-            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="#" class="navbar-brand d-flex justify-content-center align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">by Island Millwork Inc</span></strong>
             </a>
-            <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon "></span>
-            </button> -->
-        </div>
         </div>
     </header>
-
     <main role="main">
-
         <section class="jumbotron text-center">
-        <div class="container">
-            <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
-            <p>
-            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
-            <!-- {% if user.department == 'ADMINISTRATIVE' %}
-            <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
-            {% endif %} -->
-
-            <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
-            </p>
-        </div>
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-3">Man-Hour Job Costing Application</h1>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                    <a href="/dashboard" class="btn btn-primary">Job Dashboard</a>
+                    <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark">View the SmartSheet</a>
+                </div>
+            </div>
         </section>
-
-        <div class="album py-5 bg-light">
-        <div class="container text-center">
-                
-
-                <!-- <form action="/add/shift" method="request" class="col-11 p-4 my-4 bg-dark text-light mx-auto"> -->            
-                    
-                    <h4 class="mb-3" id='buy'> Shift ID: *{{ shift.id }}*</h4>
-                    <h4 class="mb-3" id='buy'> IM Number: {{ job.im_number }}</h4>
-                    <br/>
-
-                    <h4 class="center-text" id='buy'>Edit a Shift</h4>
-                    
-                        <form action="/update/shift/{{ shift.id }}" method="post" class="center-text form-horizontal p-4 my-4  text-light ">
-                            <h2 class="text-dark center-text">Job Details</h2>
-                            
-                            
-                            <div style="background-color: #D3D3D3;" class=" align-items-center form-control ">
-                                <div class="center-text">
-                                    <div class="form-group">
-                                        <label for="created_at">Shift Start: {{shift.created_at}}</label>
-                                    </div>
-                                    <div class="form-group center-text">
-                                        <p>New Punch IN Time: </p>
-                                        <label for="created_at"></label>
-                                        <input type="datetime-local" value="{{ shift.created_at.strftime('%Y-%m-%dT%H:%M') if shift.created_at is not none else '' }}" name="created_at"></label>
-                                        <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="created_at">Orignal Punch Out Time: {{ shift.updated_at }}</label>
-                                    </div>
-                                
-                                    <div class="form-group center-text">
-                                        <p>New Punch Out Time: </p>
-                                        <label for="updated_at"></label>
-                                        <input type="datetime-local" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') if shift.updated_at is not none else '' }}" name="updated_at"></label>
-                                        <!-- <input type="datetime-local"  name="updated_at" class="form-control"></textarea> -->
-                                    </div>
-                                    <div class="form-group center-text">
-                                        <label for='shift id'></label>
-                                        <input type="hidden" value="{{ shift.id }}" name="id" class="form-control"></textarea>
-                                        <!-- <input type="hidden" name="job_id" value="{{ job.id }}"> -->
-
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="note">Note: </label>
-                                        <input type="text" name="note" class="form-control" value="{{shift.note}}"></textarea>
-                                    </div>
-                                    <!-- Add a dropdown to select a new IM Number below the note input -->
-                                    <div class="form-group">
-                                        <label for="job_id">Reassign This shift to a different IM #:</label>
-                                        <select name="job_id" class="form-control">
-                                            {% for job in jobs %}
-                                                <option value="{{ job.id }}" {% if job.id == shift.job_id %}selected{% endif %}>{{ job.im_number }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                            <div class= "d-flex justify-content-center">
-                                    <input type="submit" value="Update" class="btn btn-primary">
-                                    </form>   
-                            </div>
-                            <div class= "d-flex justify-content-center">     
-                                    <!-- Add the delete button form below -->
-                                    <form action="/destroy/shift/{{ shift.id }}" name="id" method="POST" class="center-text" onsubmit="return confirm('Are you sure you want to delete this shift?');">
-                                        <input type="submit" value="Delete" class="btn btn-danger mt-5">
-                                    </form>
-                                    <!-- End of delete button form -->
-                            </div>
+        <div class="py-5 bg-light">
+            <div class="container">
+                <div class="form-card">
+                    <h4 class="form-title text-center">Edit Shift</h4>
+                    <h5 class="text-center text-white mb-4">Shift ID: {{ shift.id }} | IM #{{ job.im_number }}</h5>
+                    <form action="/update/shift/{{ shift.id }}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Original Punch In:</label>
+                            <div class="form-control">{{ shift.created_at }}</div>
                         </div>
-                                
+                        <div class="mb-3">
+                            <label for="created_at" class="form-label">New Punch In Time</label>
+                            <input type="datetime-local" id="created_at" name="created_at" class="form-control" value="{{ shift.created_at.strftime('%Y-%m-%dT%H:%M') if shift.created_at is not none else '' }}">
                         </div>
-
-    
+                        <div class="mb-3">
+                            <label class="form-label">Original Punch Out:</label>
+                            <div class="form-control">{{ shift.updated_at }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="updated_at" class="form-label">New Punch Out Time</label>
+                            <input type="datetime-local" id="updated_at" name="updated_at" class="form-control" value="{{ shift.updated_at.strftime('%Y-%m-%dT%H:%M') if shift.updated_at is not none else '' }}">
+                        </div>
+                        <input type="hidden" name="id" value="{{ shift.id }}">
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Note</label>
+                            <input type="text" name="note" id="note" class="form-control" value="{{ shift.note }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="job_id" class="form-label">Reassign IM #</label>
+                            <select name="job_id" id="job_id" class="form-select">
+                                {% for job in jobs %}
+                                    <option value="{{ job.id }}" {% if job.id == shift.job_id %}selected{% endif %}>{{ job.im_number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Update</button>
+                        </div>
+                    </form>
+                    <form action="/destroy/shift/{{ shift.id }}" method="POST" class="text-center mt-3" onsubmit="return confirm('Are you sure you want to delete this shift?');">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+                <div class="text-center mt-5">
+                    <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Company Logo">
+                </div>
+            </div>
+        </div>
     </main>
-
 </body>
 </html>
