@@ -168,9 +168,7 @@ class Job:
 
         for row in sheet.rows:
             # Initialize a dictionary to hold the job details
-            job = {'row_id': row.id}
-
-            # Iterate through cells in the row and populate the job dictionary based on column ID
+            job = {'row_id': row.id}            # Iterate through cells in the row and populate the job dictionary based on column ID
             for cell in row.cells:
                 if str(cell.column_id) == SUBMITTAL_STATUS_COLUMN_ID:
                     job['submittal_status'] = cell.value
@@ -181,9 +179,15 @@ class Job:
                 elif str(cell.column_id) == GC_COLUMN_ID:
                     job['general_contractor'] = cell.value
 
+            # Debug: Print all rows with submittal status for troubleshooting
+            if job.get('submittal_status') and job.get('im_number'):
+                print(f"Row {row.row_number}: IM #{job.get('im_number')}, Status: '{job.get('submittal_status')}'")
+
             # Check if the Submittal Status is 'Approved' and IM number exists
-            if job.get('submittal_status') == 'Approved' and job.get('im_number'):
-                print(f"Approved status found in row {row.row_number}.")
+            # Handle case sensitivity and whitespace issues
+            submittal_status = str(job.get('submittal_status', '')).strip() if job.get('submittal_status') else ''
+            if submittal_status.lower() == 'approved' and job.get('im_number'):
+                print(f"Approved status found in row {row.row_number}. Status: '{job.get('submittal_status')}'")
 
                 # Handle missing job scope
                 if 'job_scope' not in job or not job['job_scope']:
