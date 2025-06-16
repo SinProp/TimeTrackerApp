@@ -1,122 +1,286 @@
+<!DOCTYPE html>
 <html>
-<body>
 <head>
-    <title>Run Shift Analysis Report</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <title>Shift Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .custom-header {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .jumbotron {
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8)), url('/static/img/IMLOGO.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 4rem 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            padding: 30px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .form-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            color: white;
+            font-weight: 600;
+        }
+        .form-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+        .form-control,
+        .form-select {
+            border-radius: 30px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .logo-footer {
+            max-height: 100px;
+            margin-top: 30px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }        .logo-footer:hover {
+            opacity: 1;
+        }
+        .report-results {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: #2c3e50;
+        }
+        .report-summary {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .report-summary h5 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .custom-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .custom-table thead {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .custom-table thead th {
+            padding: 15px 12px;
+            font-weight: 600;
+            border: none;
+            font-size: 0.95rem;
+        }
+        .custom-table tbody td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .custom-table tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: background-color 0.3s ease;
+        }
+        .custom-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .shift-id-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .shift-id-link:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }        .time-badge {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .report-divider {
+            border-color: rgba(255,255,255,0.3) !important;
+        }
+    </style>
 </head>
 <body>
-
-    <header>
-        <div class=" navbar-dark box-shadow" style="background-color: #00FFFF;">
-        <div class="container text-center ">
-            <a href="#" class="navbar-brand align-items-center">
-                <svg style="color: F5DEB3;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 bi bi-stopwatch-fill" viewBox="0 0 16 16"> <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/></svg>
-            <strong style="color: F5DEB3;"> <span class="font-italic">Island Time</span> by Island Millwork Inc</strong>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="#" class="navbar-brand d-flex justify-content-center align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">by Island Millwork Inc</span></strong>
             </a>
-            <!-- <button class="navbar-toggler bg-secondary" style="color: F5DEB3;" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon "></span>
-            </button> -->
-        </div>
         </div>
     </header>
-
     <main role="main">
-
         <section class="jumbotron text-center">
-        <div class="container">
-            <h1 class="jumbotron-heading">Man-Hour Job Costing Application</h1>
-            <p>
-            <a href="/dashboard" class="btn btn-primary my-2">Job Dashboard</a>
-            <!-- {% if user.department == 'ADMINISTRATIVE' %}
-            <a href="/dashboard" class="btn btn-warning my-2">Manage Shifts</a>
-            {% endif %} -->
-
-            <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark my-2">View the SmartSheet</a>
-            </p>
-        </div>
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-3">Man-Hour Job Costing Application</h1>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                    <a href="/dashboard" class="btn btn-primary">Job Dashboard</a>
+                    <a href="https://app.smartsheet.com/sheets/4wQ4G37fPc5q92H5j4GQf5Qwgw696Jf92FFHFcf1?view=grid" class="btn btn-dark">View the SmartSheet</a>
+                </div>
+            </div>
         </section>
-
-        <div class="album py-5 bg-light">
-        <div class="container text-center">
-                
-            <h4> -Run a Report- </h4>
-            <h2>Please select a date range to view shifts</h2>
-
-            <!-- Shifts Form -->
-
-
-            {% if user.department == 'ADMINISTRATIVE' %}
-            <form action="/shift_report" method="POST">
-                <label for="start_date">Start Date:</label><br>
-                <input type="date" id="start_date" name="start_date" value="{{ start_date }}"><br>
-                <label for="end_date">End Date:</label><br>
-                <input type="date" id="end_date" name="end_date" value="{{ end_date }}"><br>
-                <input type="submit" value="Submit">
-            </form>
-            {% endif %}
-
-            {% if total_elapsed_time_hms %}
-                <h2>Total Elapsed Time (H:M:S): {{ total_elapsed_time_hms }}</h2>
-            {% else %}
-                <h2>No total elapsed time found</h2>
-            {% endif %}
-
-            <!-- {% if formatted_elapsed_time %}
-                <h2>Total Elapsed Time: {{ formatted_elapsed_time }}</h2>
-            {% else %}
-                <h2>No formatted elapsed time found</h2>
-            {% endif %} -->
-
-            {% if shifts %}
-            <!-- Total Shifts -->
-            <h2>Total Shifts in Date Range: {{ shifts|length }}</h2>
-
-           
-
-
-            <!-- Shifts Table -->
-            {% for shift in shifts %}
-            <table class="table table-hover text-center">
-                <thead>
-                    <tr>
-
+        <div class="py-5 bg-light">
+            <div class="container">                <div class="form-card">
+                    <h4 class="form-title text-center"><i class="fas fa-chart-line me-2"></i>Generate Shift Report</h4>
                     {% if user.department == 'ADMINISTRATIVE' %}
+                    <form action="/shift_report" method="POST">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label for="start_date" class="form-label"><i class="fas fa-calendar-alt me-1"></i>Start Date</label>
+                                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date }}">
+                            </div>
+                            <div class="col-md-5">
+                                <label for="end_date" class="form-label"><i class="fas fa-calendar-check me-1"></i>End Date</label>
+                                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date }}">
+                            </div>
+                            <div class="col-md-2 d-grid">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i>Custom Range</button>
+                            </div>
+                        </div>
+                    </form>
+                    <hr class="my-4 report-divider">
+                    <h6 class="text-center mb-3 text-white-50">Quick Report Options</h6>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="/shift_report/last_week" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-calendar-week me-1"></i>Last Week
+                        </a>
+                        <a href="/shift_report/last_two_weeks" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-calendar-day me-1"></i>Last Two Weeks
+                        </a>
+                        <a href="/shift_report/last_month" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-calendar-minus me-1"></i>Last Month
+                        </a>
+                        <a href="/shift_report/current_month" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-calendar-plus me-1"></i>Current Month
+                        </a>
+                    </div>{% endif %}
+                </div>
+                
+                {% if shifts %}
+                <div class="report-results">
+                    <div class="report-summary">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-clock me-2"></i>Total Time: {{ total_elapsed_time_hms }}</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-list me-2"></i>Total Shifts: {{ shifts|length }}</h5>
+                            </div>
+                        </div>
+                    </div>
                     
-                        <th>Shift ID</th>
-                    {% endif %}
-                        <th>Employee</th>
-                        <th>Department</th>
-                        <th>Started Shift</th>
-                        <th>Ended Shift</th>
-                        <th>Elapsed Time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    
-                            <tr>
-                                <input type="hidden" name="id" value="{{ shift.id }}">
-                                <td><a href="/edit/shift/{{shift.id}}">{{ shift.id }}</a></td>
-                                <td>{{ shift.creator.first_name }}</td>
-                                <td>{{ shift.creator.department }}</td>
-                                <td>{{ shift.created_at }}</td>
-                                <td>{{ shift.updated_at }}</td>
-                                <td>{{ shift.elapsed_time }}</td>
-                                                
-                            </tr>
-                            
-                        </tbody>
-                    </table>
-                    {% else %}
-                        <p>No shifts found for the selected date range.</p>
-                    {% endfor %}
-                    {% endif %}
+                    <div class="table-responsive">
+                        <table class="table custom-table">
+                            <thead>
+                                <tr>
+                                    {% if user.department == 'ADMINISTRATIVE' %}
+                                        <th><i class="fas fa-id-badge me-1"></i>Shift ID</th>
+                                    {% endif %}
+                                    <th><i class="fas fa-user me-1"></i>Employee</th>
+                                    <th><i class="fas fa-building me-1"></i>Department</th>
+                                    <th><i class="fas fa-play me-1"></i>Started</th>
+                                    <th><i class="fas fa-stop me-1"></i>Ended</th>
+                                    <th><i class="fas fa-hourglass-half me-1"></i>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shift in shifts %}
+                                <tr>
+                                    {% if user.department == 'ADMINISTRATIVE' %}
+                                        <td><a href="/edit/shift/{{ shift.id }}" class="shift-id-link">{{ shift.id }}</a></td>
+                                    {% endif %}
+                                    <td><strong>{{ shift.creator.first_name }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ shift.creator.department }}</span></td>
+                                    <td>{{ shift.created_at.strftime('%m/%d/%Y %I:%M %p') if shift.created_at else 'N/A' }}</td>
+                                    <td>{{ shift.updated_at.strftime('%m/%d/%Y %I:%M %p') if shift.updated_at else 'Active' }}</td>
+                                    <td>
+                                        {% if shift.elapsed_time %}
+                                            <span class="time-badge">{{ shift.elapsed_time }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% elif start_date and end_date %}
+                <div class="report-results">
+                    <div class="text-center">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No shifts found for the selected date range.</h5>
+                        <p class="text-muted">Try selecting a different date range or check if there are any shifts recorded during this period.</p>
+                    </div>
+                </div>
+                {% endif %}
+                </div>
+                <div class="text-center mt-5">
+                    <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Company Logo">
+                </div>
+            </div>
         </div>
-        </div>
-
-    
     </main>
-
 </body>
 </html>

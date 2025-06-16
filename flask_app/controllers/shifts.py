@@ -85,41 +85,84 @@ def create_shift():
     return redirect(f'/show/job/{job_id}')
 
 
-@app.route('/shift_report', methods=['GET', 'POST'])
-def shift_report():
-    user_data = {
-        "id": session['user_id']
+def render_shift_report(start_date, end_date):
+    user_data = {"id": session['user_id']}
+    data = {
+        'start_date': start_date.strftime('%Y-%m-%d'),
+        'end_date': end_date.strftime('%Y-%m-%d')
     }
 
-    today_shifts_count = Shift.get_started_today()
+    shifts = Shift.find_shifts_in_date_range(data)
+
+    total_elapsed_time = timedelta()
+    for shift in shifts:
+        if shift.elapsed_time:
+            total_elapsed_time += shift.elapsed_time
+
+    hours, remainder = divmod(total_elapsed_time.total_seconds(), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+
+    formatted_elapsed_time = total_elapsed_time_hms
+
+    return render_template('shift_report.html',
+                           shifts=shifts,
+                           user=User.get_by_id(user_data),
+                           total_elapsed_time_hms=total_elapsed_time_hms,
+                           formatted_elapsed_time=formatted_elapsed_time,
+                           start_date=data['start_date'],
+                           end_date=data['end_date'])
+
+
+@app.route('/shift_report', methods=['GET', 'POST'])
+def shift_report():
+    user_data = {"id": session['user_id']}
 
     if request.method == 'POST':
-        data = {
-            'start_date': request.form['start_date'],
-            'end_date': request.form['end_date']
-        }
-
-        shifts = Shift.find_shifts_in_date_range(data)
-
-        dateFormat = "%m/%d/%Y %I:%M %p"
-        total_elapsed_time = timedelta()
-
-        for shift in shifts:
-            if shift.elapsed_time:
-                total_elapsed_time += shift.elapsed_time
-
-        hours, remainder = divmod(total_elapsed_time.total_seconds(), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(
-            int(hours), int(minutes), int(seconds))
-
-        formatted_elapsed_time = '{:02}:{:02}:{:02}'.format(
-            int(hours), int(minutes), int(seconds))
-        print(formatted_elapsed_time)
-
-        return render_template('shift_report.html', shifts=shifts, user=User.get_by_id(user_data), total_elapsed_time_hms=total_elapsed_time_hms, formatted_elapsed_time=formatted_elapsed_time, start_date=data['start_date'], end_date=data['end_date'])
+        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
+        return render_shift_report(start_date, end_date)
     else:
         return render_template('shift_report.html', user=User.get_by_id(user_data))
+
+
+@app.route('/shift_report/last_week')
+def shift_report_last_week():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=7)
+    return render_shift_report(start_date, end_date)
+
+
+@app.route('/shift_report/last_two_weeks')
+def shift_report_last_two_weeks():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=14)
+    return render_shift_report(start_date, end_date)
+
+
+@app.route('/shift_report/last_month')
+def shift_report_last_month():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    today = datetime.utcnow().date()
+    first_day_current = today.replace(day=1)
+    end_date = first_day_current - timedelta(days=1)
+    start_date = end_date.replace(day=1)
+    return render_shift_report(start_date, end_date)
+
+
+@app.route('/shift_report/current_month')
+def shift_report_current_month():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    today = datetime.utcnow().date()
+    start_date = today.replace(day=1)
+    end_date = today
+    return render_shift_report(start_date, end_date)
 
 
 @app.route('/punch_out/<int:shift_id>', methods=['POST'])
