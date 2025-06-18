@@ -130,8 +130,25 @@
                         <li class="breadcrumb-item active" aria-current="page">Today's Activity</li>
                     </ol>
                 </nav>
-            </div>
-        </div>
+            </div>        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
         
         <div class="row mb-4 align-items-center">
             <div class="col-md-7">
@@ -273,11 +290,15 @@
                                                     <span class="duration-timer" data-start-time="{{ shift.created_at.isoformat() }}">
                                                         {{ shift.elapsed_time }}
                                                     </span>
-                                                </td>
-                                                <td>
-                                                    {% if user.department == 'ADMINISTRATIVE' %}
-                                                        <form action="/punch_out/{{ shift.id }}" method="POST" class="d-inline">
-                                                            <button class="btn btn-sm btn-danger shadow-sm">
+                                                </td>                                                <td>
+                                                    {% if user.department == 'ADMINISTRATIVE' %}                                                        <button class="btn btn-sm btn-primary shadow-sm me-1 edit-shift-btn" 
+                                                                data-shift-id="{{ shift.id }}"
+                                                                data-job-number="{{ shift.job.im_number }}"
+                                                                data-start-time="{{ shift.created_at.strftime('%Y-%m-%dT%H:%M') }}"
+                                                                data-note="{{ shift.note|default('') }}">
+                                                            <i class="fas fa-edit me-1"></i> Edit
+                                                        </button><form action="/punch_out/{{ shift.id }}" method="POST" class="d-inline">
+                                                            <button type="submit" class="btn btn-sm btn-danger shadow-sm">
                                                                 <i class="fas fa-stop-circle me-1"></i> End
                                                             </button>
                                                         </form>
@@ -295,6 +316,41 @@
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </div>    </div>    <!-- Edit Shift Modal -->
+    <div class="modal fade" id="editShiftModal" tabindex="-1" aria-labelledby="editShiftModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editShiftModalLabel">Edit Active Shift</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="editShiftForm" method="POST">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="editJobNumber" class="form-label">Job Number</label>
+                            <select class="form-control" id="editJobNumber" name="job_id" required>
+                                {% for job in all_jobs %}
+                                <option value="{{ job.id }}">{{ job.im_number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editStartTime" class="form-label">Start Time</label>
+                            <input type="datetime-local" class="form-control" id="editStartTime" name="created_at" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editNote" class="form-label">Note</label>
+                            <textarea class="form-control" id="editNote" name="note" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Shift</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -349,11 +405,41 @@
                 // Format as HH:MM:SS
                 timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             });
-        }
-        
-        // Update duration timers every second
+        }        // Update duration timers every second
         setInterval(updateDurationTimers, 1000);
         updateDurationTimers();
+        
+        // Handle edit shift button clicks
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.edit-shift-btn')) {
+                const btn = e.target.closest('.edit-shift-btn');
+                const shiftId = btn.dataset.shiftId;
+                const jobNumber = btn.dataset.jobNumber;
+                const startTime = btn.dataset.startTime;
+                const note = btn.dataset.note;
+                openEditModal(shiftId, jobNumber, startTime, note);
+            }
+        });
+          // Function to open edit modal
+        function openEditModal(shiftId, jobNumber, startTime, note) {
+            document.getElementById('editShiftForm').action = `/update/active-shift/${shiftId}`;
+            document.getElementById('editJobNumber').value = getJobIdByNumber(jobNumber);
+            document.getElementById('editStartTime').value = startTime;
+            document.getElementById('editNote').value = note || '';
+            
+            // Show modal using Bootstrap 4 syntax
+            $('#editShiftModal').modal('show');
+        }
+        
+        // Helper function to get job ID by job number
+        function getJobIdByNumber(jobNumber) {
+            const jobSelect = document.getElementById('editJobNumber');
+            for (let option of jobSelect.options) {
+                if (option.text === jobNumber) {
+                    return option.value;
+                }
+            }
+            return '';        }
     </script>
 </body>
 </html>

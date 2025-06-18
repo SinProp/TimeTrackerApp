@@ -521,6 +521,9 @@ def todays_activity():
     }
 
     logged_in_user = User.get_by_id(user_data)
+    
+    # Get all jobs for the edit modal dropdown
+    all_jobs = Job.get_all()
 
     ongoing_shifts = Shift.get_ongoing()
 
@@ -585,4 +588,51 @@ def todays_activity():
                            active_workers=active_workers,
                            department_breakdown=department_breakdown,
                            total_hours=formatted_hours,
+                           all_jobs=all_jobs,
                            user=logged_in_user)
+
+
+@app.route('/update/active-shift/<int:id>', methods=['POST'])
+def update_active_shift(id):
+    """Quick update route for active shifts from today's activity page"""
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    if not Shift.validate_shift(request.form):
+        flash("Invalid shift data provided.", "danger")
+        return redirect('/todays_activity')
+
+    # Get the shift to verify it's active
+    shift_data = {"id": id}
+    shift = Shift.get_one_shift(shift_data)
+    
+    # Only allow editing of active shifts (those without updated_at)
+    if shift.updated_at is not None:
+        flash("Cannot edit completed shifts from this page.", "warning")
+        return redirect('/todays_activity')
+
+    created_at = request.form.get('created_at')
+    if created_at and created_at.strip():
+        created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+    else:
+        created_at = shift.created_at
+
+    job_id = request.form.get('job_id')
+    note = request.form.get('note', '')
+
+    update_data = {
+        "id": id,
+        "job_id": job_id,
+        "created_at": created_at,
+        "updated_at": None,  # Keep it active
+        "note": note
+    }
+
+    try:
+        Shift.update_time(update_data)
+        flash("Active shift updated successfully!", "success")
+    except Exception as e:
+        print(f"Error updating active shift: {e}")
+        flash("An error occurred while updating the shift.", "danger")
+
+    return redirect('/todays_activity')
