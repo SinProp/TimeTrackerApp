@@ -1,4 +1,4 @@
-from flask import render_template, redirect, session, request, flash
+from flask import render_template, redirect, session, request, flash, url_for
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
@@ -93,6 +93,7 @@ def render_shift_report(start_date, end_date):
     }
 
     shifts = Shift.find_shifts_in_date_range(data)
+    all_jobs = Job.get_all_jobs()  # Pass all jobs for IM number dropdown
 
     total_elapsed_time = timedelta()
     for shift in shifts:
@@ -101,7 +102,8 @@ def render_shift_report(start_date, end_date):
 
     hours, remainder = divmod(total_elapsed_time.total_seconds(), 3600)
     minutes, seconds = divmod(remainder, 60)
-    total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+    total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(
+        int(hours), int(minutes), int(seconds))
 
     formatted_elapsed_time = total_elapsed_time_hms
 
@@ -111,19 +113,32 @@ def render_shift_report(start_date, end_date):
                            total_elapsed_time_hms=total_elapsed_time_hms,
                            formatted_elapsed_time=formatted_elapsed_time,
                            start_date=data['start_date'],
-                           end_date=data['end_date'])
+                           end_date=data['end_date'],
+                           all_jobs=all_jobs)  # Pass all_jobs to template
 
 
 @app.route('/shift_report', methods=['GET', 'POST'])
 def shift_report():
     user_data = {"id": session['user_id']}
+    logged_in_user = User.get_by_id(user_data)
 
     if request.method == 'POST':
-        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
-        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
-        return render_shift_report(start_date, end_date)
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+    else:  # GET request
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            return render_shift_report(start_date, end_date)
+        except ValueError:
+            flash("Invalid date format.", "danger")
+            return render_template('shift_report.html', user=logged_in_user)
     else:
-        return render_template('shift_report.html', user=User.get_by_id(user_data))
+        return render_template('shift_report.html', user=logged_in_user)
 
 
 @app.route('/shift_report/last_week')
@@ -230,20 +245,31 @@ def update_shift(id):
         return redirect('/logout')
 
     if not Shift.validate_shift(request.form):
-        return redirect(f'/update/shift/{id}')
-
-    created_at = request.form.get('created_at')
-    updated_at = request.form.get('updated_at')
-
-    if created_at and created_at.strip():
-        created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
-    if updated_at and updated_at.strip():
-        updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M')
-    else:
-        updated_at = None
+        # TODO: This redirect should be improved to handle validation errors from the shift report modal
+        return redirect(f'/edit/shift/{id}')
 
     job_id = request.form.get('job_id')
-    print(f"Received job_id: {job_id}")
+    created_at_str = request.form.get('created_at')
+    if created_at_str:
+        try:
+            created_at = datetime.strptime(created_at_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash("Invalid start date format.", "danger")
+            # TODO: Redirect back to the source page
+            return redirect(f'/edit/shift/{id}')
+    else:
+        created_at = None
+
+    updated_at_str = request.form.get('updated_at')
+    if updated_at_str:
+        try:
+            updated_at = datetime.strptime(updated_at_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash("Invalid end date format.", "danger")
+            # TODO: Redirect back to the source page
+            return redirect(f'/edit/shift/{id}')
+    else:
+        updated_at = None
 
     data = {
         "id": id,
@@ -254,6 +280,11 @@ def update_shift(id):
     }
 
     Shift.update_time(data)
+
+    if request.form.get('source_page') == 'shift_report':
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        return redirect(url_for('shift_report', start_date=start_date, end_date=end_date))
 
     return redirect(f'/show/job/{job_id}')
 
@@ -521,7 +552,7 @@ def todays_activity():
     }
 
     logged_in_user = User.get_by_id(user_data)
-    
+
     # Get all jobs for the edit modal dropdown
     all_jobs = Job.get_all()
 
@@ -605,7 +636,7 @@ def update_active_shift(id):
     # Get the shift to verify it's active
     shift_data = {"id": id}
     shift = Shift.get_one_shift(shift_data)
-    
+
     # Only allow editing of active shifts (those without updated_at)
     if shift.updated_at is not None:
         flash("Cannot edit completed shifts from this page.", "warning")

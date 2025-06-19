@@ -56,12 +56,19 @@ class Shift:
         end_date_str = data['end_date'] + " 23:59:59"
 
         query = '''
-            SELECT shifts.*, users.*, 
-                   TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
+            SELECT 
+                shifts.*, 
+                users.id as creator_id, users.first_name, users.last_name, users.email, users.password as creator_password, 
+                users.department, users.created_at as creator_created_at, users.updated_at as creator_updated_at,
+                jobs.id as job_id_alias, jobs.im_number, jobs.general_contractor, jobs.job_scope, jobs.estimated_hours,
+                jobs.user_id as job_user_id, jobs.context, jobs.created_at as job_created_at, jobs.updated_at as job_updated_at,
+                jobs.status,
+                TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
             FROM shifts
             JOIN users ON shifts.user_id = users.id
+            LEFT JOIN jobs ON shifts.job_id = jobs.id
             WHERE shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s
-            AND shifts.updated_at IS NOT NULL; -- Ensure we only get completed shifts
+            AND shifts.updated_at IS NOT NULL;
         '''
 
         query_data = {
@@ -72,35 +79,41 @@ class Shift:
         results = connectToMySQL(cls.db_name).query_db(query, query_data)
 
         if not results:
-            # Return an empty list instead of None for consistency
             return []
 
         shifts = []
         for row in results:
-            elapsed_time_val = row.get('elapsed_time')
+            this_shift = cls(row)
 
-            shift_info = {
-                'id': row['id'],
-                'created_at': row['created_at'],
-                'updated_at': row['updated_at'],
-                'elapsed_time': elapsed_time_val,
-                'job_id': row['job_id'],
-                'user_id': row['user_id'],
-                'note': row['note'],
-            }
-            user_info = {
-                'id': row['users.id'],
+            user_data = {
+                'id': row['creator_id'],
                 'first_name': row['first_name'],
                 'last_name': row['last_name'],
                 'email': row['email'],
-                'password': row['password'],
+                'password': row['creator_password'],
                 'department': row['department'],
-                'created_at': row['users.created_at'],
-                'updated_at': row['users.updated_at'],
+                'created_at': row['creator_created_at'],
+                'updated_at': row['creator_updated_at'],
             }
+            this_shift.creator = user.User(user_data)
 
-            this_shift = Shift(shift_info)
-            this_shift.creator = user.User(user_info)
+            if row.get('im_number') is not None:
+                job_data = {
+                    'id': row['job_id_alias'],
+                    'im_number': row['im_number'],
+                    'general_contractor': row['general_contractor'],
+                    'job_scope': row['job_scope'],
+                    'estimated_hours': row['estimated_hours'],
+                    'user_id': row['job_user_id'],
+                    'context': row['context'],
+                    'created_at': row['job_created_at'],
+                    'updated_at': row['job_updated_at'],
+                    'status': row['status']
+                }
+                this_shift.job = job.Job(job_data)
+            else:
+                this_shift.job = None
+
             shifts.append(this_shift)
 
         return shifts
@@ -160,17 +173,35 @@ class Shift:
 
     @classmethod
     def update_time(cls, data):
-        query = """
-        UPDATE shifts 
-        SET created_at = %(created_at)s, 
-            updated_at = %(updated_at)s, 
-            note = %(note)s, 
-            job_id = %(job_id)s 
-        WHERE id = %(id)s;
-        """
-        print(
-            f"Executing update query with data: {data}")  # Debugging statement
-        return connectToMySQL(cls.db_name).query_db(query, data)
+        query_parts = []
+        query_data = {'id': data['id']}
+
+        if 'note' in data:
+            query_parts.append("note = %(note)s")
+            query_data['note'] = data['note']
+
+        if 'job_id' in data and data['job_id']:
+            query_parts.append("job_id = %(job_id)s")
+            query_data['job_id'] = data['job_id']
+
+        if 'created_at' in data and data['created_at']:
+            query_parts.append("created_at = %(created_at)s")
+            query_data['created_at'] = data['created_at']
+
+        if 'updated_at' in data:
+            if data['updated_at']:
+                query_parts.append("updated_at = %(updated_at)s")
+                query_data['updated_at'] = data['updated_at']
+            else:
+                query_parts.append("updated_at = NULL")
+
+        if not query_parts:
+            return  # Nothing to update
+
+        query = f"UPDATE shifts SET {', '.join(query_parts)} WHERE id = %(id)s;"
+
+        print(f"Executing update query: {query} with data: {query_data}")
+        return connectToMySQL(cls.db_name).query_db(query, query_data)
 
     @classmethod
     def elapsed_time(cls, data):
