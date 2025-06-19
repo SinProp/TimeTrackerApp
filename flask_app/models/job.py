@@ -67,6 +67,16 @@ class Job:
         return list(job_dict.values())
 
     @classmethod
+    def get_all_jobs(cls):
+        query = "SELECT * FROM jobs ORDER BY im_number;"
+        results = connectToMySQL(cls.db_name).query_db(query)
+        jobs = []
+        if results:
+            for row in results:
+                jobs.append(cls(row))
+        return jobs
+
+    @classmethod
     def get_one(cls, data):
         query = "SELECT * FROM jobs WHERE id = %(id)s;"
         results = connectToMySQL(cls.db_name).query_db(query, data)
@@ -81,22 +91,23 @@ class Job:
 
     @classmethod
     def show_all_jobs(cls):
-        query = "SELECT * FROM jobs LEFT JOIN users on users.id = user_id;"
+        query = "SELECT jobs.*, users.first_name, users.last_name, users.email, users.password, users.department, users.created_at as users_created_at, users.updated_at as users_updated_at FROM jobs LEFT JOIN users on users.id = jobs.user_id;"
         results = connectToMySQL(cls.db_name).query_db(query)
         all_jobs = []
         for row in results:
-            user_data = {
-                'id': row['id'],
-                'first_name': row['first_name'],
-                'last_name': row['last_name'],
-                'email': row['email'],
-                'password': row['password'],
-                'id': session['user_id'],
-                'created_at': row['users.created_at'],
-                'updated_at': row['users.updated_at'],
-            }
             new_job = cls(row)
-            new_job.user = user.User(user_data)
+            if row['first_name']:
+                user_data = {
+                    'id': row['user_id'],
+                    'first_name': row['first_name'],
+                    'last_name': row['last_name'],
+                    'email': row['email'],
+                    'password': row['password'],
+                    'department': row['department'],
+                    'created_at': row['users_created_at'],
+                    'updated_at': row['users_updated_at'],
+                }
+                new_job.user = user.User(user_data)
             all_jobs.append(new_job)
         return all_jobs
 
@@ -148,16 +159,16 @@ class Job:
                 print(f"output.shifts: {output.shifts}")
             return output
 
-    @classmethod
-    def end_current_shift(cls, data):
-        # Find the current shift for the user
-        current_shift = Shift.query.filter_by(
-            user_id=data, end_time=None).first()
-        if current_shift:
-            # End the shift by setting the end time to now
-            current_shift.end_time = datetime.now()
-            # Save changes to the database
-            db.session.commit()
+    # @classmethod
+    # def end_current_shift(cls, data):
+    #     # Find the current shift for the user
+    #     current_shift = Shift.query.filter_by(
+    #         user_id=data, end_time=None).first()
+    #     if current_shift:
+    #         # End the shift by setting the end time to now
+    #         current_shift.end_time = datetime.now()
+    #         # Save changes to the database
+    #         db.session.commit()
 
     @classmethod
     def get_approved_jobs_from_smartsheet(cls):
@@ -168,9 +179,8 @@ class Job:
 
         for row in sheet.rows:
             # Initialize a dictionary to hold the job details
-            job = {'row_id': row.id}
-
             # Iterate through cells in the row and populate the job dictionary based on column ID
+            job = {'row_id': row.id}
             for cell in row.cells:
                 if str(cell.column_id) == SUBMITTAL_STATUS_COLUMN_ID:
                     job['submittal_status'] = cell.value
@@ -181,9 +191,18 @@ class Job:
                 elif str(cell.column_id) == GC_COLUMN_ID:
                     job['general_contractor'] = cell.value
 
+            # Debug: Print all rows with submittal status for troubleshooting
+            if job.get('submittal_status') and job.get('im_number'):
+                print(
+                    f"Row {row.row_number}: IM #{job.get('im_number')}, Status: '{job.get('submittal_status')}'")
+
             # Check if the Submittal Status is 'Approved' and IM number exists
-            if job.get('submittal_status') == 'Approved' and job.get('im_number'):
-                print(f"Approved status found in row {row.row_number}.")
+            # Handle case sensitivity and whitespace issues
+            submittal_status = str(job.get('submittal_status', '')).strip(
+            ) if job.get('submittal_status') else ''
+            if submittal_status.lower() == 'approved' and job.get('im_number'):
+                print(
+                    f"Approved status found in row {row.row_number}. Status: '{job.get('submittal_status')}'")
 
                 # Handle missing job scope
                 if 'job_scope' not in job or not job['job_scope']:

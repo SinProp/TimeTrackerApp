@@ -145,3 +145,17 @@ def destroy_job(id):
     }
     Job.destroy(data)
     return redirect('/dashboard')
+
+
+@app.route('/api/manual-sync-test', methods=['POST'])
+def manual_sync_test():
+    """Manual trigger for testing the automated sync function"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        from flask_app.utils.scheduler_tasks import automated_job_sync
+        result = automated_job_sync()
+        return jsonify({"message": result}), 200
+    except Exception as e:
+        return jsonify({"error": f"Manual sync failed: {str(e)}"}), 500
