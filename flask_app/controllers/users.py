@@ -2,6 +2,7 @@ from flask_app import app
 from flask import render_template, redirect, session, request, flash, url_for
 from ..models import user, job, shift
 from ..models.user import User
+from ..models.job import Job
 from flask_bcrypt import Bcrypt
 
 bcrypt = Bcrypt(app)
@@ -54,6 +55,29 @@ def login():
     session['user_id'] = user_with_email.id
     flash('Congratulations, You logged in!')
     print("SUCCESSFUL LOGIN")
+
+    # Trigger approved jobs sync on login to keep data current
+    try:
+        approved_jobs = Job.get_approved_jobs_from_smartsheet()
+        print(
+            f"Login sync: Retrieved {len(approved_jobs)} approved jobs from Smartsheet")
+
+        added_count = 0
+        for job in approved_jobs:
+            if not Job.check_im_number_exists({'im_number': job['im_number']}):
+                Job.add_new_record(job)
+                added_count += 1
+                print(f"Login sync: Added IM #{job['im_number']}")
+
+        if added_count > 0:
+            print(f"Login sync: Added {added_count} new approved jobs")
+        else:
+            print("Login sync: No new approved jobs to add")
+
+    except Exception as e:
+        print(f"Login sync error: {str(e)}")
+        # Don't block login if sync fails
+
     return redirect('/dashboard')
 
 
