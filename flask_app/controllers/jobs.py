@@ -83,9 +83,14 @@ def edit_job(id):
         "id": id
     }
     job = Job.get_one(data)
-    if job.user_id != session['user_id']:
-        flash("You can only edit your own jobs.")
-        return redirect('/dashboard')
+    user_data = {
+        'id': session['user_id']
+    }
+    logged_user = User.get_by_id(user_data)
+    if logged_user.department != 'ADMINISTRATIVE':
+        if job.user_id != session['user_id']:
+            flash("You can only edit your own jobs.")
+            return redirect('/dashboard')
     return render_template('edit_job.html', job=job)
 
 
