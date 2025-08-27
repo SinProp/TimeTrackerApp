@@ -199,20 +199,50 @@
                         </div>
                     </form>
                     <hr class="my-4 report-divider">
+                    {% if user.department == 'ADMINISTRATIVE' and start_date and end_date %}
+                    <div class="text-center mb-3 d-flex justify-content-center gap-2 flex-wrap">
+                        <form action="/set_default_end_times" method="POST" class="d-inline" onsubmit="return confirm('Set 3:30 PM as the end time for all incomplete shifts in this date range?');">
+                            <input type="hidden" name="start_date" value="{{ start_date }}">
+                            <input type="hidden" name="end_date" value="{{ end_date }}">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-clock me-1"></i> Set 3:30 PM for Incomplete Shifts
+                            </button>
+                        </form>
+                        <form action="/fix_long_shifts" method="POST" class="d-inline" onsubmit="return confirm('Normalize any completed shifts longer than 24 hours to end at 3:30 PM on the start day in this date range?');">
+                            <input type="hidden" name="start_date" value="{{ start_date }}">
+                            <input type="hidden" name="end_date" value="{{ end_date }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-compress-alt me-1"></i> Normalize Long Shifts (>24h)
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
                     <h6 class="text-center mb-3 text-white-50">Quick Report Options</h6>
-                    <div class="d-flex flex-wrap justify-content-center gap-2">
-                        <a href="/shift_report/last_week" class="btn btn-outline-light btn-sm">
-                            <i class="fas fa-calendar-week me-1"></i>Last Week
-                        </a>
-                        <a href="/shift_report/last_two_weeks" class="btn btn-outline-light btn-sm">
-                            <i class="fas fa-calendar-day me-1"></i>Last Two Weeks
-                        </a>
-                        <a href="/shift_report/last_month" class="btn btn-outline-light btn-sm">
-                            <i class="fas fa-calendar-minus me-1"></i>Last Month
-                        </a>
-                        <a href="/shift_report/current_month" class="btn btn-outline-light btn-sm">
-                            <i class="fas fa-calendar-plus me-1"></i>Current Month
-                        </a>
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <a href="/shift_report/last_week" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-calendar-week me-1"></i>Last Week
+                            </a>
+                            <a href="/shift_report/last_two_weeks" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-calendar-day me-1"></i>Last Two Weeks
+                            </a>
+                            <a href="/shift_report/last_month" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-calendar-minus me-1"></i>Last Month
+                            </a>
+                            <a href="/shift_report/current_month" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-calendar-plus me-1"></i>Current Month
+                            </a>
+                        </div>
+                        {% if user.department == 'ADMINISTRATIVE' %}
+                        <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                            <a href="/shift_report/incomplete" class="btn btn-warning btn-sm text-dark">
+                                <i class="fas fa-exclamation-circle me-1"></i>Incomplete Shifts
+                            </a>
+                            <a href="/shift_report/long" class="btn btn-danger btn-sm">
+                                <i class="fas fa-hourglass-end me-1"></i>Long Shifts (>24h)
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>{% endif %}
                 </div>
                 
@@ -257,12 +287,18 @@
                                     <td><strong>{{ shift.creator.first_name }}</strong></td>
                                     <td><span class="badge bg-secondary">{{ shift.creator.department }}</span></td>
                                     <td>{{ shift.created_at.strftime('%m/%d/%Y %I:%M %p') if shift.created_at else 'N/A' }}</td>
-                                    <td>{{ shift.updated_at.strftime('%m/%d/%Y %I:%M %p') if shift.updated_at else 'Active' }}</td>
+                                    <td>
+                                        {% if shift.updated_at %}
+                                            {{ shift.updated_at.strftime('%m/%d/%Y %I:%M %p') }}
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Missing</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if shift.elapsed_time %}
                                             <span class="time-badge">{{ shift.elapsed_time }}</span>
                                         {% else %}
-                                            <span class="badge bg-success">Active</span>
+                                            <span class="badge bg-warning text-dark">Incomplete</span>
                                         {% endif %}
                                     </td>
                                     {% if user.department == 'ADMINISTRATIVE' %}

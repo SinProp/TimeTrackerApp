@@ -67,8 +67,12 @@ class Shift:
             FROM shifts
             JOIN users ON shifts.user_id = users.id
             LEFT JOIN jobs ON shifts.job_id = jobs.id
-            WHERE shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s
-            AND shifts.updated_at IS NOT NULL;
+            WHERE (
+                (shifts.updated_at IS NOT NULL AND shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s)
+                OR
+                (shifts.updated_at IS NULL AND shifts.created_at BETWEEN %(start_date)s AND %(end_date)s)
+            )
+            ORDER BY IFNULL(shifts.updated_at, shifts.created_at) ASC;
         '''
 
         query_data = {
@@ -225,6 +229,52 @@ class Shift:
         }
         connectToMySQL(cls.db_name).query_db(query, data)
 
+        @classmethod
+        def set_default_end_times(cls, data):
+                """
+                Set updated_at to 3:30 PM of the same day as created_at for all shifts
+                that have no updated_at within the given created_at date range.
+                Excludes shifts that started after 3:30 PM to avoid zero/negative durations.
+                Expects data with keys: start_date (YYYY-MM-DD), end_date (YYYY-MM-DD)
+                """
+                start_date_str = data['start_date'] + " 00:00:00"
+                end_date_str = data['end_date'] + " 23:59:59"
+
+                query = '''
+                UPDATE shifts
+                SET updated_at = TIMESTAMP(DATE(created_at), '15:30:00')
+                WHERE updated_at IS NULL
+                    AND created_at BETWEEN %(start_date)s AND %(end_date)s
+                    AND created_at < TIMESTAMP(DATE(created_at), '15:30:00');
+                '''
+                query_data = {
+                        'start_date': start_date_str,
+                        'end_date': end_date_str
+                }
+                return connectToMySQL(cls.db_name).query_db(query, query_data)
+
+        @classmethod
+        def count_incomplete_shifts_in_range(cls, data):
+                """
+                Count shifts with NULL updated_at where created_at is in given date range.
+                Expects data with keys: start_date (YYYY-MM-DD), end_date (YYYY-MM-DD)
+                """
+                start_date_str = data['start_date'] + " 00:00:00"
+                end_date_str = data['end_date'] + " 23:59:59"
+
+                query = '''
+                SELECT COUNT(*) AS cnt
+                FROM shifts
+                WHERE updated_at IS NULL
+                    AND created_at BETWEEN %(start_date)s AND %(end_date)s;
+                '''
+                query_data = {
+                        'start_date': start_date_str,
+                        'end_date': end_date_str
+                }
+                results = connectToMySQL(cls.db_name).query_db(query, query_data)
+                return results[0]['cnt'] if results else 0
+
     @classmethod
     def destroy(cls, data):
         print(f"Executing delete query for shift with id: {data['id']}")
@@ -243,6 +293,121 @@ class Shift:
         query = "SELECT COUNT(*) as count FROM shifts WHERE created_at BETWEEN %(start)s AND %(end)s;"
         results = connectToMySQL(cls.db_name).query_db(query, data)
         return results[0]['count'] if results else 0
+
+    @classmethod
+    def find_incomplete_shifts(cls):
+        """Return all shifts with no end time, including user/job and live elapsed time."""
+        query = '''
+            SELECT 
+                shifts.*, 
+                users.id as creator_id, users.first_name, users.last_name, users.email, users.password as creator_password, 
+                users.department, users.created_at as creator_created_at, users.updated_at as creator_updated_at,
+                jobs.id as job_id_alias, jobs.im_number, jobs.general_contractor, jobs.job_scope, jobs.estimated_hours,
+                jobs.user_id as job_user_id, jobs.context, jobs.created_at as job_created_at, jobs.updated_at as job_updated_at,
+                jobs.status,
+                TIMEDIFF(IFNULL(shifts.updated_at, NOW()), shifts.created_at) as elapsed_time
+            FROM shifts
+            JOIN users ON shifts.user_id = users.id
+            LEFT JOIN jobs ON shifts.job_id = jobs.id
+            WHERE shifts.updated_at IS NULL
+            ORDER BY shifts.created_at ASC;
+        '''
+        results = connectToMySQL(cls.db_name).query_db(query)
+        if not results:
+            return []
+        shifts = []
+        for row in results:
+            this_shift = cls(row)
+
+            user_data = {
+                'id': row['creator_id'],
+                'first_name': row['first_name'],
+                'last_name': row['last_name'],
+                'email': row['email'],
+                'password': row['creator_password'],
+                'department': row['department'],
+                'created_at': row['creator_created_at'],
+                'updated_at': row['creator_updated_at'],
+            }
+            this_shift.creator = user.User(user_data)
+
+            if row.get('im_number') is not None:
+                job_data = {
+                    'id': row['job_id_alias'],
+                    'im_number': row['im_number'],
+                    'general_contractor': row['general_contractor'],
+                    'job_scope': row['job_scope'],
+                    'estimated_hours': row['estimated_hours'],
+                    'user_id': row['job_user_id'],
+                    'context': row['context'],
+                    'created_at': row['job_created_at'],
+                    'updated_at': row['job_updated_at'],
+                    'status': row['status']
+                }
+                this_shift.job = job.Job(job_data)
+            else:
+                this_shift.job = None
+
+            shifts.append(this_shift)
+        return shifts
+
+    @classmethod
+    def find_long_shifts(cls):
+        """Return all completed shifts longer than 24 hours, with user/job and elapsed time."""
+        query = '''
+            SELECT 
+                shifts.*, 
+                users.id as creator_id, users.first_name, users.last_name, users.email, users.password as creator_password, 
+                users.department, users.created_at as creator_created_at, users.updated_at as creator_updated_at,
+                jobs.id as job_id_alias, jobs.im_number, jobs.general_contractor, jobs.job_scope, jobs.estimated_hours,
+                jobs.user_id as job_user_id, jobs.context, jobs.created_at as job_created_at, jobs.updated_at as job_updated_at,
+                jobs.status,
+                TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
+            FROM shifts
+            JOIN users ON shifts.user_id = users.id
+            LEFT JOIN jobs ON shifts.job_id = jobs.id
+            WHERE shifts.updated_at IS NOT NULL
+              AND TIMESTAMPDIFF(HOUR, shifts.created_at, shifts.updated_at) > 24
+            ORDER BY shifts.created_at ASC;
+        '''
+        results = connectToMySQL(cls.db_name).query_db(query)
+        if not results:
+            return []
+        shifts = []
+        for row in results:
+            this_shift = cls(row)
+
+            user_data = {
+                'id': row['creator_id'],
+                'first_name': row['first_name'],
+                'last_name': row['last_name'],
+                'email': row['email'],
+                'password': row['creator_password'],
+                'department': row['department'],
+                'created_at': row['creator_created_at'],
+                'updated_at': row['creator_updated_at'],
+            }
+            this_shift.creator = user.User(user_data)
+
+            if row.get('im_number') is not None:
+                job_data = {
+                    'id': row['job_id_alias'],
+                    'im_number': row['im_number'],
+                    'general_contractor': row['general_contractor'],
+                    'job_scope': row['job_scope'],
+                    'estimated_hours': row['estimated_hours'],
+                    'user_id': row['job_user_id'],
+                    'context': row['context'],
+                    'created_at': row['job_created_at'],
+                    'updated_at': row['job_updated_at'],
+                    'status': row['status']
+                }
+                this_shift.job = job.Job(job_data)
+            else:
+                this_shift.job = None
+
+            shifts.append(this_shift)
+        return shifts
 
     @staticmethod
     def validate_shift(shift):

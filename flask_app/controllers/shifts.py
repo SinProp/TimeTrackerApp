@@ -3,6 +3,7 @@ from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
 from flask_app.models.shift import Shift
+from flask_app.config.mysqlconnection import connectToMySQL
 from datetime import datetime, timedelta, timezone
 dateFormat = "%m/%d/%Y %I:%M %p"
 
@@ -140,6 +141,158 @@ def shift_report():
     else:
         return render_template('shift_report.html', user=logged_in_user)
 
+@app.route('/shift_report/incomplete')
+def shift_report_incomplete():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {"id": session['user_id']}
+    all_jobs = Job.get_all_jobs()
+    shifts = Shift.find_incomplete_shifts()
+    # Sum elapsed_time (may be timedelta or string), best-effort format
+    total_seconds = 0
+    for s in shifts:
+        if s.elapsed_time:
+            try:
+                parts = str(s.elapsed_time).split(':')
+                if len(parts) == 3:
+                    total_seconds += int(parts[0]) * 3600 + int(parts[1]) * 60 + int(float(parts[2]))
+            except Exception:
+                pass
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+    return render_template('shift_report.html',
+                           shifts=shifts,
+                           user=User.get_by_id(user_data),
+                           total_elapsed_time_hms=total_elapsed_time_hms,
+                           formatted_elapsed_time=total_elapsed_time_hms,
+                           start_date=None,
+                           end_date=None,
+                           all_jobs=all_jobs)
+
+@app.route('/shift_report/long')
+def shift_report_long():
+    if 'user_id' not in session:
+        return redirect('/logout')
+    user_data = {"id": session['user_id']}
+    all_jobs = Job.get_all_jobs()
+    shifts = Shift.find_long_shifts()
+    total_seconds = 0
+    for s in shifts:
+        if s.elapsed_time:
+            try:
+                parts = str(s.elapsed_time).split(':')
+                if len(parts) == 3:
+                    total_seconds += int(parts[0]) * 3600 + int(parts[1]) * 60 + int(float(parts[2]))
+            except Exception:
+                pass
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    total_elapsed_time_hms = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+    return render_template('shift_report.html',
+                           shifts=shifts,
+                           user=User.get_by_id(user_data),
+                           total_elapsed_time_hms=total_elapsed_time_hms,
+                           formatted_elapsed_time=total_elapsed_time_hms,
+                           start_date=None,
+                           end_date=None,
+                           all_jobs=all_jobs)
+
+@app.route('/set_default_end_times', methods=['POST'])
+def set_default_end_times():
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    user_data = {"id": session['user_id']}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        flash("You don't have permission to access this feature", "danger")
+        return redirect('/shift_report')
+
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+
+    if not start_date or not end_date:
+        flash("Please provide both start and end dates", "danger")
+        return redirect('/shift_report')
+
+    data = {
+        'start_date': start_date,
+        'end_date': end_date
+    }
+
+    try:
+        start_date_str = start_date + " 00:00:00"
+        end_date_str = end_date + " 23:59:59"
+        query = '''
+        UPDATE shifts
+        SET updated_at = TIMESTAMP(DATE(created_at), '15:30:00')
+        WHERE updated_at IS NULL
+          AND created_at BETWEEN %(start_date)s AND %(end_date)s
+          AND created_at < TIMESTAMP(DATE(created_at), '15:30:00');
+        '''
+        query_data = {
+            'start_date': start_date_str,
+            'end_date': end_date_str
+        }
+        affected = connectToMySQL(Shift.db_name).query_db(query, query_data) or 0
+        if affected <= 0:
+            flash("No incomplete shifts found in the selected date range", "info")
+        else:
+            flash(f"Set 3:30 PM end time for {affected} shift(s)", "success")
+    except Exception as e:
+        print(f"Error setting default end times: {e}")
+        flash("An error occurred while setting default end times", "danger")
+
+    return redirect(url_for('shift_report', start_date=start_date, end_date=end_date))
+
+
+@app.route('/fix_long_shifts', methods=['POST'])
+def fix_long_shifts():
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    user_data = {"id": session['user_id']}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != 'ADMINISTRATIVE':
+        flash("You don't have permission to access this feature", "danger")
+        return redirect('/shift_report')
+
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+
+    if not start_date or not end_date:
+        flash("Please provide both start and end dates", "danger")
+        return redirect('/shift_report')
+
+    try:
+        start_date_str = start_date + " 00:00:00"
+        end_date_str = end_date + " 23:59:59"
+        # Only adjust completed shifts whose duration exceeds 24 hours
+        query = '''
+        UPDATE shifts
+        SET updated_at = TIMESTAMP(DATE(created_at), '15:30:00')
+        WHERE updated_at IS NOT NULL
+          AND created_at BETWEEN %(start_date)s AND %(end_date)s
+          AND TIMESTAMPDIFF(HOUR, created_at, updated_at) > 24
+          AND created_at < TIMESTAMP(DATE(created_at), '15:30:00');
+        '''
+        query_data = {
+            'start_date': start_date_str,
+            'end_date': end_date_str
+        }
+        affected = connectToMySQL(Shift.db_name).query_db(query, query_data) or 0
+        if affected <= 0:
+            flash("No long shifts (>24h) found in the selected date range", "info")
+        else:
+            flash(f"Normalized {affected} long shift(s) to 3:30 PM on start day", "success")
+    except Exception as e:
+        print(f"Error fixing long shifts: {e}")
+        flash("An error occurred while fixing long shifts", "danger")
+
+    return redirect(url_for('shift_report', start_date=start_date, end_date=end_date))
 
 @app.route('/shift_report/last_week')
 def shift_report_last_week():

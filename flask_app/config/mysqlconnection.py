@@ -42,8 +42,9 @@ class MySQLConnection:
                     return result
 
                 else:
-                    # For UPDATE, DELETE, or other queries, we just commit the changes.
+                    # For UPDATE, DELETE, or other queries, commit and return affected row count.
                     self.connection.commit()
+                    return cursor.rowcount
 
             except Exception as e:
                 # If something goes wrong (e.g., a syntax error in the query),
