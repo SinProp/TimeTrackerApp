@@ -4,6 +4,8 @@ from ..models import user, job, shift
 from ..models.user import User
 from ..models.job import Job
 from flask_bcrypt import Bcrypt
+from flask import jsonify
+from flask_app.utils.export_to_sharepoint import export_database_to_sharepoint
 
 bcrypt = Bcrypt(app)
 
@@ -188,5 +190,21 @@ def destroy_user(id):
     logged_in_user = User.get_by_id(user_data)
     if logged_in_user.department != 'ADMINISTRATIVE':
         return redirect('/dashboard')
+
+
+@app.route('/export/sharepoint/manual')
+def manual_sharepoint_export():
+    """Manual trigger for SharePoint export (Admin only)."""
+    if 'user_id' not in session:
+        return redirect('/logout')
+
+    user_data = {"id": session['user_id']}
+    current_user = User.get_by_id(user_data)
+    if not current_user or current_user.department != 'ADMINISTRATIVE':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    result = export_database_to_sharepoint()
+    return jsonify({"message": result})
+
     User.soft_delete({"id": id})
     return redirect('/manage_users')

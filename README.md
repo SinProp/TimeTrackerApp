@@ -37,4 +37,21 @@ Currently, I am the maintainer and sole contributor to this project. If you'd li
 - Repository: https://github.com/SinProp/TimeTrackerApp.git
 - Issue tracker: https://github.com/SinProp/TimeTrackerApp/issues
 
+## Automated SharePoint Export (Graph)
+
+This app can export recent MySQL data to Excel (.xlsx) and upload it to SharePoint using Microsoft Graph (app-only).
+
+Requirements:
+- App registration with Microsoft Graph Application permissions: `Sites.ReadWrite.All` (admin consent required)
+- Environment variables in `.env`:
+	- `SHAREPOINT_URL` (e.g., `https://<tenant>.sharepoint.com/sites/<SiteName>`)
+	- `SHAREPOINT_CLIENT_ID` and `SHAREPOINT_CLIENT_SECRET` (secret Value)
+	- `AZURE_TENANT_ID` (tenant GUID)
+	- `SHAREPOINT_DOC_LIBRARY` (default: `Shared Documents`)
+	- `SHAREPOINT_TARGET_FOLDER` (e.g., `Island Server/Inventory/Labor Scan`)
+
+Notes:
+- Upload uses Graph simple upload (<4MB). For larger files, switch to upload sessions.
+- No Office365-REST-Python-Client is used; all calls are via Graph.
+
 
