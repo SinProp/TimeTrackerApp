@@ -8,15 +8,15 @@ scheduler_logger = logging.getLogger('scheduler')
 
 def automated_job_sync():
     """
-    Automated job to sync approved jobs from Smartsheet
-    Runs daily at 6 AM EST
+    Automated job to sync approved jobs from Dataverse.
+    Runs daily at 6 AM EST.
     """
     try:
-        scheduler_logger.info(f"Starting automated Smartsheet sync at {datetime.now()}")
+        scheduler_logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
         
-        # Get approved jobs from Smartsheet
-        approved_jobs = Job.get_approved_jobs_from_smartsheet()
-        scheduler_logger.info(f"Retrieved {len(approved_jobs)} approved jobs from Smartsheet")
+        # Get approved jobs from Dataverse
+        approved_jobs = Job.get_approved_jobs_from_dataverse()
+        scheduler_logger.info(f"Retrieved {len(approved_jobs)} approved jobs from Dataverse")
 
         # Process each approved job
         added_count = 0
@@ -34,9 +34,9 @@ def automated_job_sync():
                 scheduler_logger.info(f"IM number {job['im_number']} already exists. Skipping.")
                 skipped_count += 1
 
-        scheduler_logger.info(f"Automated sync completed. Added: {added_count}, Skipped: {skipped_count}")
+        scheduler_logger.info(f"Dataverse sync completed. Added: {added_count}, Skipped: {skipped_count}")
         return f"Sync completed successfully. Added {added_count} jobs, skipped {skipped_count} duplicates."
         
     except Exception as e:
-        scheduler_logger.error(f"Error in automated job sync: {str(e)}")
+        scheduler_logger.error(f"Error in automated Dataverse sync: {str(e)}")
         return f"Error: {str(e)}"

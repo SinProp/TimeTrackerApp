@@ -2,17 +2,14 @@ from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 
 from ..models import shift, user
-import smartsheet
 from datetime import datetime
-import time
-from ..config.config import (SMARTSHEET_API_KEY, SHEET_ID, SUBMITTAL_STATUS_COLUMN_ID,
-                             IM_NUMBER_COLUMN_ID, SCOPE_COLUMN_ID, GC_COLUMN_ID)
+from ..dataverse.service import get_approved_jobs
+
 dateFormat = "%m/%d/%Y %I:%M %p"
 
 
 class Job:
     db_name = 'man_hours'
-    smartsheet_client = smartsheet.Smartsheet(SMARTSHEET_API_KEY)
 
     def __init__(self, db_data):
         self.id = db_data['id']
@@ -171,59 +168,12 @@ class Job:
     #         db.session.commit()
 
     @classmethod
-    def get_approved_jobs_from_smartsheet(cls):
-        approved_jobs = []
-        print("Fetching sheet from Smartsheet...")
-        sheet = cls.smartsheet_client.Sheets.get_sheet(SHEET_ID)
-        print("Sheet fetched successfully.")
-
-        for row in sheet.rows:
-            # Initialize a dictionary to hold the job details
-            # Iterate through cells in the row and populate the job dictionary based on column ID
-            job = {'row_id': row.id}
-            for cell in row.cells:
-                if str(cell.column_id) == SUBMITTAL_STATUS_COLUMN_ID:
-                    job['submittal_status'] = cell.value
-                elif str(cell.column_id) == IM_NUMBER_COLUMN_ID:
-                    job['im_number'] = cell.value
-                elif str(cell.column_id) == SCOPE_COLUMN_ID:
-                    job['job_scope'] = cell.value
-                elif str(cell.column_id) == GC_COLUMN_ID:
-                    job['general_contractor'] = cell.value
-
-            # Debug: Print all rows with submittal status for troubleshooting
-            if job.get('submittal_status') and job.get('im_number'):
-                print(
-                    f"Row {row.row_number}: IM #{job.get('im_number')}, Status: '{job.get('submittal_status')}'")
-
-            # Check if the Submittal Status is 'Approved' and IM number exists
-            # Handle case sensitivity and whitespace issues
-            submittal_status = str(job.get('submittal_status', '')).strip(
-            ) if job.get('submittal_status') else ''
-            if submittal_status.lower() == 'approved' and job.get('im_number'):
-                print(
-                    f"Approved status found in row {row.row_number}. Status: '{job.get('submittal_status')}'")
-
-                # Handle missing job scope
-                if 'job_scope' not in job or not job['job_scope']:
-                    print(
-                        f"Missing job scope for IM {job['im_number']}. Setting to 'See Work Order'")
-                    job['job_scope'] = "See Work Order"
-                # Handle job scope that exceeds database character limit (typically 255)
-                elif len(str(job['job_scope'])) > 255:
-                    print(
-                        f"Job scope for IM {job['im_number']} exceeds 255 characters. Setting to 'See Work Order'")
-                    job['job_scope'] = "See Work Order"
-
-                # Ensure general_contractor is present
-                if 'general_contractor' not in job or not job['general_contractor']:
-                    job['general_contractor'] = "Unknown"
-
-                approved_jobs.append(job)
-                print(f"Job added: {job}")
-
-        print(f"Total approved jobs: {len(approved_jobs)}")
-        return approved_jobs
+    def get_approved_jobs_from_dataverse(cls):
+        """
+        Get approved jobs from Dataverse.
+        Replaces the old get_approved_jobs_from_smartsheet() method.
+        """
+        return get_approved_jobs()
 
     @classmethod
     def check_im_number_exists(cls, data):

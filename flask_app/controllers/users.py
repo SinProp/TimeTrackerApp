@@ -58,9 +58,9 @@ def login():
 
     # Trigger approved jobs sync on login to keep data current
     try:
-        approved_jobs = Job.get_approved_jobs_from_smartsheet()
+        approved_jobs = Job.get_approved_jobs_from_dataverse()
         print(
-            f"Login sync: Retrieved {len(approved_jobs)} approved jobs from Smartsheet")
+            f"Login sync: Retrieved {len(approved_jobs)} approved jobs from Dataverse")
 
         added_count = 0
         for job in approved_jobs:
@@ -70,12 +70,12 @@ def login():
                 print(f"Login sync: Added IM #{job['im_number']}")
 
         if added_count > 0:
-            print(f"Login sync: Added {added_count} new approved jobs")
+            print(f"Login sync: Added {added_count} new approved jobs from Dataverse")
         else:
             print("Login sync: No new approved jobs to add")
 
     except Exception as e:
-        print(f"Login sync error: {str(e)}")
+        print(f"Login sync error (Dataverse): {str(e)}")
         # Don't block login if sync fails
 
     return redirect('/dashboard')

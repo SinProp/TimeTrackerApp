@@ -1,4 +1,5 @@
 import pymysql.cursors
+import os
 
 
 class MySQLConnection:
@@ -6,9 +7,9 @@ class MySQLConnection:
         # This establishes a connection to the MySQL database using the provided credentials.
         # Make sure to adjust 'user', 'password', and 'host' as needed for your environment.
         connection = pymysql.connect(
-            host='localhost',
-            user='root',
-            password='root',
+            host=os.environ.get('MYSQL_HOST', 'localhost'),
+            user=os.environ.get('MYSQL_USER', 'root'),
+            password=os.environ.get('MYSQL_PASSWORD', ''),
             db=db,
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor,
