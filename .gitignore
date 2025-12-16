@@ -10,6 +10,9 @@ man_hours schema.mwb.bak
 
 .env
 
+# SQL dumps
+*.sql
+
 # Python virtual environment
 venv/
 env/

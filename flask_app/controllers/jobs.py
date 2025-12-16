@@ -118,11 +118,13 @@ def update_job(id):
 @app.route('/api/process-approved-jobs', methods=['POST'])
 def process_approved_jobs():
     try:
-        # Get approved jobs from Smartsheet
-        approved_jobs = Job.get_approved_jobs_from_smartsheet()
-        print(f"Retrieved {len(approved_jobs)} Approved jobs from Smartsheet.")
+        # Get approved jobs from Dataverse
+        approved_jobs = Job.get_approved_jobs_from_dataverse()
+        print(f"Retrieved {len(approved_jobs)} Approved jobs from Dataverse.")
 
         # Process each approved job
+        added_count = 0
+        skipped_count = 0
         for job in approved_jobs:
             print(f"Processing job with IM number: {job['im_number']}")
             # Check if the IM number exists
@@ -131,12 +133,13 @@ def process_approved_jobs():
                     f"IM number {job['im_number']} does not exist in the database. Adding new record.")
                 # Add a new record
                 Job.add_new_record(job)
-
+                added_count += 1
             else:
-                (f"IM number {job['im_number']} already exists in the database. Skipping.")
+                print(f"IM number {job['im_number']} already exists in the database. Skipping.")
+                skipped_count += 1
 
-        print("Finished processing approved jobs.")
-        return jsonify({"message": "Approved jobs processed successfully"}), 200
+        print("Finished processing approved jobs from Dataverse.")
+        return jsonify({"message": f"Dataverse sync complete. Added: {added_count}, Skipped: {skipped_count}"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

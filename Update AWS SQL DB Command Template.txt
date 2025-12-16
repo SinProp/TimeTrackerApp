@@ -1,0 +1,5 @@
+mysqldump -u root -p man_hours > 2_23_24Backup.sql
+
+mysql -u root -p man_hours < /home/ubuntu/2_23_24DBAdjustment
+
+ssh -i "Time_App_AWS_KP.pem" ubuntu@ec2-34-207-34-17.compute-1.amazonaws.com
