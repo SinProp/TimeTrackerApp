@@ -1,5 +1,5 @@
 from flask_app import app
-from flask_app.controllers import users, jobs, shifts
+from flask_app.controllers import users, jobs, shifts, version
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from flask_app.utils.scheduler_tasks import automated_job_sync
