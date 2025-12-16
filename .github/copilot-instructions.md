@@ -77,6 +77,13 @@ python server.py  # Runs on http://localhost:5000 with debug=True
 2. Click "Test Auto Sync" button (calls `automated_job_sync()` manually)
 3. Check console logs for sync details
 
+### Accessing Production EC2 Server
+The production Ubuntu EC2 instance can be accessed via SSH shortcut:
+```bash
+ssh island-time  # Connects to ubuntu@34.207.34.17 using ~/.ssh/island-time-ec2.pem
+```
+SSH config location: `~/.ssh/config`
+
 ### Database Queries
 All queries use parameterized `mogrify()` pattern:
 ```python
