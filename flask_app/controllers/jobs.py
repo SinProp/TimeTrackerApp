@@ -145,6 +145,31 @@ def process_approved_jobs():
 
 
 @app.route('/destroy/job/<int:id>')
+    @app.route('/api/sync-jobs', methods=['POST'])
+    def sync_jobs():
+        """
+        Manual trigger for syncing approved jobs from Dataverse.
+        Requires ADMINISTRATIVE role for security.
+        Returns JSON with sync results: added count and skipped count.
+        """
+        if 'user_id' not in session:
+            return jsonify({"error": "Unauthorized: not logged in"}), 401
+
+        user_data = {"id": session['user_id']}
+        user = User.get_by_id(user_data)
+    
+        # Only admins can manually trigger syncs
+        if user.department != 'ADMINISTRATIVE':
+            return jsonify({"error": "Unauthorized: admin role required"}), 403
+
+        try:
+            from flask_app.utils.scheduler_tasks import automated_job_sync
+            result = automated_job_sync()
+            return jsonify({"message": result, "status": "success"}), 200
+        except Exception as e:
+            return jsonify({"error": f"Sync failed: {str(e)}", "status": "error"}), 500
+
+
 def destroy_job(id):
     if 'user_id' not in session:
         return redirect('/logout')

@@ -68,17 +68,13 @@ if 'user_id' not in session:
 | `imi_jobid` | `dataverse_id` | Stored for future write-back |
 
 **Sync logic** (`flask_app/utils/scheduler_tasks.py`):
+
+## Key Files & Their Responsibilities
+**Sync logic** (`flask_app/utils/scheduler_tasks.py`):
 - Runs automatically at 6 AM EST (configurable in `server.py`)
 - Skips IM numbers already in DB (no duplicates)
 - Logs to `scheduler_logger` (not `print`)
-- Manual trigger: `/new/job` page has "Test Auto Sync" button
-
-## Key Files & Their Responsibilities
-
-| File | Purpose | Key Methods |
-|------|---------|------------|
-| `server.py` | Flask app + APScheduler setup | `scheduler.add_job()` with `CronTrigger` |
-| `flask_app/models/job.py` | Job CRUD + Dataverse sync | `get_approved_jobs_from_dataverse()`, `getJobWithShifts()` |
+- Manual trigger: POST to `/api/sync-jobs` (requires ADMINISTRATIVE role) for admin-triggered syncs in a pinch
 | `flask_app/models/user.py` | User auth + validation | `EMAIL_REGEX` for validation; `soft_delete()` |
 | `flask_app/models/shift.py` | Shift CRUD (clock in/out) | Complex JOINs to fetch user + job info together |
 | `flask_app/dataverse/service.py` | Dataverse API wrapper | `get_approved_jobs()`, `get_all_active_jobs()` |
@@ -111,11 +107,19 @@ if 'user_id' not in session:
 4. Test manually: navigate to `/new/job` → click "Test Auto Sync" → check console
 
 ### Modifying Scheduled Task
-- Edit trigger in `server.py`: `CronTrigger(hour=6, minute=0, timezone=eastern)`
-- Edit logic in `flask_app/utils/scheduler_tasks.py`: `automated_job_sync()`
-- Logs go to `scheduler_logger` (configured with `logging.basicConfig()`)
 
 ## Production Database Management
+### Manual Job Sync via API
+Admins can trigger a manual sync at any time via the `/api/sync-jobs` POST endpoint:
+```bash
+curl -X POST http://localhost:5000/api/sync-jobs \
+  -H "Content-Type: application/json"
+```
+Requirements:
+- User must be logged in with ADMINISTRATIVE role
+- Returns JSON with `added` and `skipped` job counts
+- Same function as scheduled 6 AM sync; useful for urgent job imports
+
 
 **EC2 Instance**: ubuntu@34.207.34.17 (accessible via `ssh island-time`)
 
