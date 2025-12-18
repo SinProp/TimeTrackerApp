@@ -1,137 +1,167 @@
 # AI Coding Agent Instructions for Island Time
 
-**Project**: Time Tracker Application - Labor tracking system for construction/maintenance work  
-**Stack**: Python Flask + MySQL + APScheduler  
-**Current Status**: Smartsheet → Dataverse migration in progress
+**Project**: Time Tracker Application — Construction labor tracking system  
+**Stack**: Python Flask + MySQL + APScheduler | **Status**: Dataverse migration complete  
+**Production**: AWS EC2 Ubuntu instance (10–12 daily users)
 
-## Architecture Overview
+## Quick Start
 
-Island Time is an MVC Flask application that tracks actual labor vs. estimated labor. Three core models:
-
-- **Jobs**: Work orders (imported from Dataverse, synced daily at 6 AM EST via APScheduler)
-- **Shifts**: Clock in/out records linking users to jobs with timestamps
-- **Users**: Employee accounts with bcrypt-hashed passwords, soft-delete support
-
-**Data Flow**: Dataverse (approved jobs) → MySQL (`man_hours` DB) → Flask controllers → Jinja2 templates
-
-## Critical Architecture Decisions
-
-1. **Soft Deletes Only**: Users use `deleted_date` column, never hard-deleted. Pattern: `WHERE deleted_date IS NULL`
-2. **MVC Strict Separation**: Models only do DB/auth logic; controllers route; templates render
-3. **Scheduled Sync Model**: Jobs sync automatically daily; manual sync via `/api/process-approved-jobs` endpoint
-4. **Legacy MySQLConnection Pattern**: Uses pooled cursors with `mogrify()` for safe parameterization; closes connection after each query (not ideal but established pattern)
-
-## Key Files & Responsibilities
-
-| File | Purpose | Critical Notes |
-|------|---------|-----------------|
-| `server.py` | Flask app entry + APScheduler setup | Runs daily sync; timezone is EST |
-| `flask_app/models/job.py` | Job logic + Dataverse client init | `get_approved_jobs_from_dataverse()` replaces old Smartsheet method |
-| `flask_app/models/shift.py` | Shift CRUD (clock in/out) | JOIN query complexity to get user + job info |
-| `flask_app/models/user.py` | User CRUD + validation + login | EMAIL_REGEX pattern for validation |
-| `flask_app/config/mysqlconnection.py` | DB abstraction layer | Connection closes after query; autocommit enabled |
-| `flask_app/dataverse/service.py` | Dataverse API wrapper | Token caching; filters for `imi_submittalstatus eq 826130004` (Approved) |
-| `flask_app/utils/scheduler_tasks.py` | `automated_job_sync()` function | Logs to scheduler logger; runs at 6 AM EST |
-
-## Dataverse Migration Status
-
-**Current**: Transitioning from Smartsheet to Dataverse.
-
-**What's Done**:
-- Dataverse client + service modules created
-- Job model updated to call `get_approved_jobs_from_dataverse()`
-- Config.py updated with Dataverse env vars
-- Scheduler updated to use Dataverse sync
-
-**Field Mapping**:
-```
-Dataverse imi_jobs table → MySQL jobs table:
-├── imi_imnumber       → im_number
-├── imi_gc             → general_contractor
-├── imi_scopesummary   → job_scope (truncated to 255 chars)
-├── imi_submittalstatus ≡ 826130004 (Approved filter)
-└── imi_jobid          → stored for future write-back
-```
-
-**Smartsheet Code**: DEPRECATED. Files to delete when Dataverse fully live:
-- `flask_app/controllers/sheet_id.py`
-- `flask_app/controllers/getcolumnids.py`
-- `flask_app/controllers/ss_autoadd_jobs.py`
-- `flask_app/controllers/webhooks_controller.py`
-- `debug_smartsheet_statuses.py`
-
-## Developer Workflows
-
-### Local Setup
 ```bash
+# Local development
 pip install -r requirements.txt
 export DATAVERSE_BASE_URL="https://your-org.crm.dynamics.com"
-export DATAVERSE_TENANT_ID="..."
-export DATAVERSE_CLIENT_ID="..."
-export DATAVERSE_CLIENT_SECRET="..."
-python server.py  # Runs on http://localhost:5000 with debug=True
+export DATAVERSE_TENANT_ID="..." DATAVERSE_CLIENT_ID="..." DATAVERSE_CLIENT_SECRET="..."
+python server.py  # http://localhost:5000 with auto-reload
+
+# Production access
+ssh island-time  # Configured in ~/.ssh/config (ubuntu@34.207.34.17)
 ```
 
-### Testing Job Sync Locally
-1. Navigate to `/new/job` page
-2. Click "Test Auto Sync" button (calls `automated_job_sync()` manually)
-3. Check console logs for sync details
+## Architecture: Three Core Models
 
-### Accessing Production EC2 Server
-The production Ubuntu EC2 instance can be accessed via SSH shortcut:
-```bash
-ssh island-time  # Connects to ubuntu@34.207.34.17 using ~/.ssh/island-time-ec2.pem
-```
-SSH config location: `~/.ssh/config`
+| Model | Purpose | Key Pattern |
+|-------|---------|------------|
+| **Job** | Work orders (imported from Dataverse daily at 6 AM EST) | `get_approved_jobs_from_dataverse()` method |
+| **Shift** | Clock in/out records linking user → job → timestamps | Actual elapsed time calculated from `created_at` and `updated_at` |
+| **User** | Employee accounts with soft-delete support | `deleted_date IS NULL` for active records |
 
-### Database Queries
-All queries use parameterized `mogrify()` pattern:
+**Data Flow**: Dataverse (approved IM jobs) → APScheduler (6 AM sync) → MySQL `man_hours` → Flask controllers → Jinja2 templates
+
+## Critical Patterns
+
+### 1. **Soft Deletes Only**
+Users are never hard-deleted. All queries on users must include `WHERE deleted_date IS NULL`:
 ```python
-query = "SELECT * FROM users WHERE email = %(email)s;"
-result = connectToMySQL('man_hours').query_db(query, {'email': 'user@example.com'})
+query = "SELECT * FROM users WHERE deleted_date IS NULL;"
+# Soft delete: UPDATE users SET deleted_date = NOW() WHERE id = %(id)s;
 ```
 
-## Project-Specific Conventions
+### 2. **MySQLConnection Pattern** (Legacy)
+Parameterized queries close connection after each call. Always use `%(key)s` syntax:
+```python
+query = "SELECT * FROM jobs WHERE id = %(id)s;"
+connectToMySQL('man_hours').query_db(query, {'id': 123})
+```
 
-1. **Date Format**: `"%m/%d/%Y %I:%M %p"` (12-hour with AM/PM) — used across templates
-2. **Flash Messages**: Use `flash()` for user feedback in controllers; templates render with `get_flashed_messages()`
-3. **Session Check**: Every route checks `if 'user_id' not in session: return redirect('/logout')`
-4. **Logging**: `print()` for debug; `scheduler_logger.info()` for scheduled tasks
-5. **Database Schema**: Timestamps use MySQL `NOW()` function; soft deletes check `deleted_date IS NULL`
+### 3. **Session Protection**
+Every route checks for user in session; redirect to `/logout` if missing:
+```python
+if 'user_id' not in session:
+    return redirect('/logout')
+```
 
-## Common Tasks
+### 4. **MVC Strict Separation**
+- **Models** (`flask_app/models/`): DB queries + validation logic only
+- **Controllers** (`flask_app/controllers/`): Flask routes + request handling
+- **Templates** (`flask_app/templates/`): HTML rendering only
 
-### Adding a New Job Field
-1. Add column to MySQL `jobs` table
-2. Update `Job.__init__()` to assign from `db_data` dict
-3. Add to `get_all()` and `get_by_id()` SELECT queries
-4. If from Dataverse: map in `flask_app/dataverse/service.py`'s `get_approved_jobs()`
-5. Update controller methods to pass in form data
+## Dataverse Integration Details
 
-### Modifying Sync Logic
-- Approved jobs filter: `imi_submittalstatus eq 826130004` (in `flask_app/dataverse/service.py`)
-- Sync runs at `6 AM EST` (in `server.py`, APScheduler CronTrigger)
-- Manual endpoints: `/api/process-approved-jobs`, login trigger in `flask_app/controllers/users.py`
+**Approved jobs filter**: `imi_submittalstatus eq 826130004 and statecode eq 0`
 
-### Debugging Failed Queries
-Check `flask_app/config/mysqlconnection.py`:
-- Logs printed query via `cursor.mogrify()` 
-- All exceptions caught and logged
-- Connection closes after query (if debugging hanging requests, check query completion)
+**Field mapping** (Dataverse → MySQL):
+| Dataverse | MySQL | Notes |
+|-----------|-------|-------|
+| `imi_imnumber` | `im_number` | Work order ID |
+| `imi_gc` | `general_contractor` | Contractor name |
+| `imi_scopesummary` | `job_scope` | Truncated to 255 chars; defaults to "See Work Order" |
+| `imi_jobid` | `dataverse_id` | Stored for future write-back |
+
+**Sync logic** (`flask_app/utils/scheduler_tasks.py`):
+- Runs automatically at 6 AM EST (configurable in `server.py`)
+- Skips IM numbers already in DB (no duplicates)
+- Logs to `scheduler_logger` (not `print`)
+- Manual trigger: `/new/job` page has "Test Auto Sync" button
+
+## Key Files & Their Responsibilities
+
+| File | Purpose | Key Methods |
+|------|---------|------------|
+| `server.py` | Flask app + APScheduler setup | `scheduler.add_job()` with `CronTrigger` |
+| `flask_app/models/job.py` | Job CRUD + Dataverse sync | `get_approved_jobs_from_dataverse()`, `getJobWithShifts()` |
+| `flask_app/models/user.py` | User auth + validation | `EMAIL_REGEX` for validation; `soft_delete()` |
+| `flask_app/models/shift.py` | Shift CRUD (clock in/out) | Complex JOINs to fetch user + job info together |
+| `flask_app/dataverse/service.py` | Dataverse API wrapper | `get_approved_jobs()`, `get_all_active_jobs()` |
+| `flask_app/dataverse/client.py` | OAuth2 + REST client | Singleton token caching; MSAL authentication |
+| `flask_app/config/mysqlconnection.py` | DB abstraction | Query logging via `cursor.mogrify()` |
+
+## Code Conventions
+
+| Convention | Example | Usage |
+|-----------|---------|-------|
+| **Date Format** | `"%m/%d/%Y %I:%M %p"` | All templates & UI displays (12-hour AM/PM) |
+| **Flash Messages** | `flash("Success!", "success")` | User feedback in controllers; rendered in templates |
+| **Logging** | `print("debug")` / `scheduler_logger.info("sync")` | Console vs. scheduled tasks |
+| **Elapsed Time** | `shift.created_at` → `shift.updated_at` | TIMEDIFF in JOIN queries; confusing naming |
+| **Validation** | `Job.validate_job(data)` → returns bool | Flash messages for errors inside validators |
+
+## Common Development Tasks
+
+### Adding a Job Field
+1. Add column to `jobs` MySQL table
+2. Update `Job.__init__()` dict assignment
+3. Add to `SELECT` queries in `get_all()`, `get_one()`
+4. If from Dataverse: add to `SELECT_FIELDS` tuple in `service.py` + map in `get_approved_jobs()`
+5. Update controller form handling + template
+
+### Fixing Dataverse Sync Issues
+1. Check `flask_app/dataverse/client.py` OAuth2 token (MSAL setup)
+2. Verify `DATAVERSE_*` env vars match Azure app registration
+3. Confirm `SUBMITTAL_STATUS_APPROVED = 826130004` is correct in current org
+4. Test manually: navigate to `/new/job` → click "Test Auto Sync" → check console
+
+### Modifying Scheduled Task
+- Edit trigger in `server.py`: `CronTrigger(hour=6, minute=0, timezone=eastern)`
+- Edit logic in `flask_app/utils/scheduler_tasks.py`: `automated_job_sync()`
+- Logs go to `scheduler_logger` (configured with `logging.basicConfig()`)
+
+## Production Database Management
+
+**EC2 Instance**: ubuntu@34.207.34.17 (accessible via `ssh island-time`)
+
+**Database Dump Naming Convention**: Always use descriptive, timestamped names to avoid confusion:
+- Format: `YYYY-MM-DD_HHmm_<context>.sql`
+- Examples:
+  - `2025-12-18_1430_pre-migration.sql` — before schema changes
+  - `2025-12-18_1500_backup-before-hotfix.sql` — before emergency patch
+  - `2025-12-18_1600_production-snapshot.sql` — regular backup
+  - `2025-12-18_after-dataverse-sync.sql` — after job sync testing
+
+**Backup Commands**:
+```bash
+# Local backup of production DB (run from EC2 terminal)
+mysqldump -u root -p man_hours > ~/backups/$(date +%Y-%m-%d_%H%M)_pre-<context>.sql
+
+# Restore from backup
+mysql -u root -p man_hours < ~/backups/YYYY-MM-DD_HHmm_<context>.sql
+
+# Verify backup integrity before critical operations
+mysql -u root -p man_hours < ~/backups/<filename>.sql --dry-run  # Preview
+```
+
+**Backup Storage**: Store dumps in `~/backups/` directory on EC2; use `ls -ltr` to view recent backups by timestamp.
 
 ## External Dependencies
 
-- **MSAL**: Azure authentication for Dataverse API (`from msal import ConfidentialClientApplication`)
-- **APScheduler**: Background job scheduling (already in requirements.txt)
-- **Dataverse Web API**: Accessed via REST + OAuth2 tokens (see `flask_app/dataverse/client.py`)
-- **MySQL**: Version 5.7+ required for `NOW()` function
+- **MSAL** (`from msal import ConfidentialClientApplication`): Azure OAuth2 for Dataverse
+- **APScheduler**: Background job scheduling (background mode, not daemon)
+- **Flask**: Web framework with Jinja2 templating
+- **MySQL**: Version 5.7+ (uses `NOW()` function + `TIMEDIFF()`)
 
-## Known Limitations
+## Known Limitations & Gotchas
 
-1. **Single DB Connection Pattern**: MySQLConnection closes after each query (not pooled). For high-concurrency apps, consider replacing with SQLAlchemy ORM.
-2. **No Transaction Support**: Each query commits immediately; no rollback on multi-step operations.
-3. **Hardcoded Timezone**: EST timezone in APScheduler; change in `server.py` if needed.
-4. **Shift Timestamps**: `created_at` = punch in, `updated_at` = punch out (confusing naming; consider refactoring).
+1. **Connection per Query**: MySQLConnection closes after each call; no pooling. Causes N+1 queries in loops. Migration to SQLAlchemy ORM recommended for high traffic.
+2. **No Transactions**: Each query auto-commits. Multi-step operations cannot rollback.
+3. **Shift Timestamp Confusion**: `created_at` = punch in, `updated_at` = punch out. Refactor naming if adding new shift logic.
+4. **Hardcoded EST**: Scheduler timezone is hardcoded in `server.py`. Change line `eastern = pytz.timezone('US/Eastern')` if needed.
+5. **Admin Role**: Only users with `department == 'ADMINISTRATIVE'` can edit other users' jobs. Check in `edit_job()` controller.
+
+## Deprecated Smartsheet Code (TODO: Delete)
+- `flask_app/controllers/sheet_id.py`
+- `flask_app/controllers/getcolumnids.py`  
+- `flask_app/controllers/ss_autoadd_jobs.py`
+- `flask_app/controllers/webhooks_controller.py`
+- `debug_smartsheet_statuses.py`
 
 ## Testing Notes
 
