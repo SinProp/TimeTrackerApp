@@ -4,39 +4,52 @@ import logging
 
 # Set up logging for scheduler
 logging.basicConfig(level=logging.INFO)
-scheduler_logger = logging.getLogger('scheduler')
+scheduler_logger = logging.getLogger("scheduler")
+
 
 def automated_job_sync():
     """
     Automated job to sync approved jobs from Dataverse.
     Runs daily at 6 AM EST.
+
+    Optimized to use bulk operations instead of N+1 queries.
     """
     try:
         scheduler_logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
-        
+
         # Get approved jobs from Dataverse
         approved_jobs = Job.get_approved_jobs_from_dataverse()
-        scheduler_logger.info(f"Retrieved {len(approved_jobs)} approved jobs from Dataverse")
+        scheduler_logger.info(
+            f"Retrieved {len(approved_jobs)} approved jobs from Dataverse"
+        )
 
-        # Process each approved job
-        added_count = 0
-        skipped_count = 0
-        
-        for job in approved_jobs:
-            scheduler_logger.info(f"Processing job with IM number: {job['im_number']}")
-            
-            # Check if the IM number exists
-            if not Job.check_im_number_exists({'im_number': job['im_number']}):
-                scheduler_logger.info(f"IM number {job['im_number']} does not exist. Adding new record.")
-                Job.add_new_record(job)
-                added_count += 1
-            else:
-                scheduler_logger.info(f"IM number {job['im_number']} already exists. Skipping.")
-                skipped_count += 1
+        if not approved_jobs:
+            scheduler_logger.info("No approved jobs to process")
+            return "Sync completed. No approved jobs found in Dataverse."
 
-        scheduler_logger.info(f"Dataverse sync completed. Added: {added_count}, Skipped: {skipped_count}")
+        # OPTIMIZED: Check all IM numbers in one query instead of N queries
+        im_numbers = [job["im_number"] for job in approved_jobs]
+        existing_im_numbers = Job.get_existing_im_numbers(im_numbers)
+
+        # Filter to only new jobs
+        new_jobs = [
+            job for job in approved_jobs if job["im_number"] not in existing_im_numbers
+        ]
+
+        skipped_count = len(approved_jobs) - len(new_jobs)
+
+        # Log which jobs are being processed
+        for job in new_jobs:
+            scheduler_logger.info(f"Adding new job with IM number: {job['im_number']}")
+
+        # OPTIMIZED: Insert all new jobs in one query instead of N queries
+        added_count = Job.bulk_add_records(new_jobs)
+
+        scheduler_logger.info(
+            f"Dataverse sync completed. Added: {added_count}, Skipped: {skipped_count}"
+        )
         return f"Sync completed successfully. Added {added_count} jobs, skipped {skipped_count} duplicates."
-        
+
     except Exception as e:
         scheduler_logger.error(f"Error in automated Dataverse sync: {str(e)}")
         return f"Error: {str(e)}"
