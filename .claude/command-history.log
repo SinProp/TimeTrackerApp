@@ -167,3 +167,34 @@ EOF
 [2026-01-09 07:35:30] find /Users/titosmacbookair/Documents/Island-Time -name "*.sql" -o -name "*schema*" -o -name "*migration*" | head -20
 [2026-01-09 07:35:36] grep -r "roster\|attendance\|expected\|assigned" /Users/titosmacbookair/Documents/Island-Time/flask_app --include="*.py" --include="*.html" | head -20
 [2026-01-09 07:35:36] ls /Users/titosmacbookair/Documents/Island-Time/flask_app/templates/ | head -20
+[2026-01-09 09:58:22] ls -la /Users/titosmacbookair/Documents/Island-Time
+[2026-01-09 09:59:46] python server.py 2>&1 &
+[2026-01-09 10:01:45] git log main..HEAD --oneline
+[2026-01-09 10:01:45] git diff main --name-only
+[2026-01-09 10:01:54] git diff main -- flask_app/templates/dashboard.html | head -100
+[2026-01-09 10:02:06] git diff main -- flask_app/templates/manage_users.html | head -80
+[2026-01-09 10:49:45] cat /Users/titosmacbookair/Documents/Island-Time/.env 2>/dev/null | grep -i "db\|database\|mysql" | head -10
+[2026-01-09 10:49:57] mysql -u root man_hours -e "ALTER TABLE users ADD COLUMN on_active_roster BOOLEAN DEFAULT TRUE;"
+[2026-01-09 10:58:31] mysql -u root man_hours -e "ALTER TABLE jobs ADD COLUMN visible_to_production BOOLEAN DEFAULT TRUE;"
+[2026-01-09 11:04:35] ls -la /Users/titosmacbookair/Documents/Island-Time
+[2026-01-09 11:16:23] mysql -u root man_hours -e "ALTER TABLE jobs ADD COLUMN source VARCHAR(50) DEFAULT 'dataverse';"
+[2026-01-09 11:16:48] mysql -u root man_hours -e "DESCRIBE users;" | grep -E "Field|on_active"
+[2026-01-09 11:16:55] mysql -u root man_hours -e "DESCRIBE jobs;" | grep -E "Field|visible|source"
+[2026-01-09 12:01:15] git diff --stat
+[2026-01-09 12:01:28] git diff flask_app/templates/todays_activity.html | head -100
+[2026-01-09 12:01:42] git add flask_app/templates/todays_activity.html flask_app/models/user.py
+[2026-01-09 12:01:54] git commit -m "$(cat <<'EOF'
+style(todays-activity): redesign Yet to Clock In section with modern UI
+
+- Add refined CSS styling with gradient header and warm background
+- Implement responsive grid layout for worker chips
+- Create elegant worker cards with name/department hierarchy
+- Add circular dismiss buttons with red hover effect
+- Include smooth scale-down animation on dismiss
+- Update HTML structure with semantic class names
+- Improve visual consistency with dashboard theme
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
+[2026-01-09 12:02:04] git log -1 --oneline && git status

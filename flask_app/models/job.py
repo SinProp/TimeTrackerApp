@@ -295,37 +295,22 @@ class Job:
     @classmethod
     def get_all_for_user(cls, department):
         """
-        Get all jobs filtered by user department.
-        Admins see all jobs, production users see only visible jobs.
+        Get all jobs for dashboard.
+        All users now see all jobs - jobs auto-activate when someone clocks in.
         """
         today = datetime.now().strftime("%Y-%m-%d")
-        if department == "ADMINISTRATIVE":
-            # Admins see all jobs
-            query = """
-                SELECT jobs.*,
-                    shifts.created_at AS shift_start,
-                    shifts.updated_at AS shift_end,
-                    shift_users.id AS shift_user_id,
-                    shift_users.first_name AS shift_user_first_name
-                FROM jobs
-                LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
-                LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
-                ORDER BY jobs.id;
-            """
-        else:
-            # Non-admins see only visible jobs
-            query = """
-                SELECT jobs.*,
-                    shifts.created_at AS shift_start,
-                    shifts.updated_at AS shift_end,
-                    shift_users.id AS shift_user_id,
-                    shift_users.first_name AS shift_user_first_name
-                FROM jobs
-                LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
-                LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
-                WHERE jobs.visible_to_production = TRUE
-                ORDER BY jobs.id;
-            """
+        # Everyone sees all jobs now - production can search and clock into any job
+        query = """
+            SELECT jobs.*,
+                shifts.created_at AS shift_start,
+                shifts.updated_at AS shift_end,
+                shift_users.id AS shift_user_id,
+                shift_users.first_name AS shift_user_first_name
+            FROM jobs
+            LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
+            LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
+            ORDER BY jobs.id;
+        """
         results = connectToMySQL(cls.db_name).query_db(query, (today,))
         if not results:
             return []

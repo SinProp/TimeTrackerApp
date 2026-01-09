@@ -114,12 +114,12 @@
             border: none;
             border-radius: 16px;
             overflow: hidden;
-            background: linear-gradient(135deg, #fffbf5 0%, #fff8ef 100%);
-            box-shadow: 0 4px 20px rgba(243, 156, 18, 0.12);
+            background: linear-gradient(135deg, #fff5f5 0%, #ffefef 100%);
+            box-shadow: 0 4px 20px rgba(231, 76, 60, 0.12);
         }
 
         .awaiting-card .card-header {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             border: none;
             padding: 16px 20px;
         }
@@ -155,6 +155,28 @@
             padding: 20px;
         }
 
+        .emoji-frame-top, .emoji-frame-bottom {
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 8px;
+            margin: 15px 0;
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        .emoji-frame-top {
+            animation: floatEmojis 3s ease-in-out infinite;
+        }
+
+        .emoji-frame-bottom {
+            animation: floatEmojis 3s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatEmojis {
+            0%, 100% { transform: translateX(0px); }
+            50% { transform: translateX(10px); }
+        }
+
         .workers-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -166,7 +188,7 @@
             align-items: center;
             justify-content: space-between;
             background: white;
-            border: 1px solid rgba(243, 156, 18, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.2);
             border-radius: 10px;
             padding: 10px 14px;
             transition: all 0.2s ease;
@@ -174,8 +196,8 @@
         }
 
         .worker-chip:hover {
-            border-color: rgba(243, 156, 18, 0.4);
-            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.15);
+            border-color: rgba(231, 76, 60, 0.4);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.15);
             transform: translateY(-1px);
         }
 
@@ -233,13 +255,13 @@
             gap: 8px;
             margin-top: 16px;
             padding-top: 14px;
-            border-top: 1px solid rgba(243, 156, 18, 0.15);
+            border-top: 1px solid rgba(231, 76, 60, 0.15);
             color: #95a5a6;
             font-size: 0.8rem;
         }
 
         .awaiting-card .helper-text i {
-            color: #f39c12;
+            color: #e74c3c;
         }
 
         /* Dismiss animation */
@@ -401,12 +423,16 @@
                 <div class="card mt-3 awaiting-card">
                     <div class="card-header">
                         <h5>
-                            <span class="eyes-icon">👀</span>
+                            <span class="eyes-icon">&#128064;</span>
                             <span>Yet to Clock In</span>
+                            <span class="eyes-icon">&#128184;</span>
                             <span class="count-badge" id="missing-count">{{ missing_workers|length }}</span>
                         </h5>
                     </div>
                     <div class="card-body" id="missing-workers-container">
+                        <div class="emoji-frame-top">
+                            &#128064; &#128184; &#128064; &#128184; &#128064; &#128184; &#128064; &#128184;
+                        </div>
                         <div class="workers-grid">
                             {% for worker in missing_workers %}
                             <div class="worker-chip missing-worker-badge" data-worker-id="{{ worker.id }}">
@@ -422,6 +448,9 @@
                                 </button>
                             </div>
                             {% endfor %}
+                        </div>
+                        <div class="emoji-frame-bottom">
+                            &#128184; &#128064; &#128184; &#128064; &#128184; &#128064; &#128184; &#128064;
                         </div>
                         <div class="helper-text">
                             <i class="fas fa-clock"></i>
@@ -548,20 +577,48 @@
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
         
-        // Handle auto-refresh
+        // Handle auto-refresh with localStorage persistence
         const autoRefreshSwitch = document.getElementById('autoRefreshSwitch');
         let autoRefreshInterval;
         
+        // Restore auto-refresh state from localStorage
+        function restoreAutoRefreshState() {
+            const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
+            autoRefreshSwitch.checked = autoRefreshEnabled;
+            
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            }
+        }
+        
+        // Start auto-refresh interval
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                location.reload();
+            }, 30000);
+        }
+        
+        // Stop auto-refresh interval
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        // Handle auto-refresh toggle
         autoRefreshSwitch.addEventListener('change', function() {
             if (this.checked) {
-                // Auto-refresh every 30 seconds
-                autoRefreshInterval = setInterval(() => {
-                    location.reload();
-                }, 30000);
+                localStorage.setItem('autoRefreshEnabled', 'true');
+                startAutoRefresh();
             } else {
-                clearInterval(autoRefreshInterval);
+                localStorage.setItem('autoRefreshEnabled', 'false');
+                stopAutoRefresh();
             }
         });
+        
+        // Restore state on page load
+        restoreAutoRefreshState();
         
         // Manual refresh button
         document.getElementById('refresh-button').addEventListener('click', function() {
