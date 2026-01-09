@@ -4,23 +4,23 @@ import re
 from ..models import shift
 
 
-EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$")
 
 
 class User:
-    db = 'man_hours'
+    db = "man_hours"
 
     def __init__(self, data):
-        self.id = data['id']
-        self.first_name = data['first_name']
-        self.last_name = data['last_name']
-        self.email = data['email']
-        self.department = data['department']
-        self.password = data['password']
-        self.created_at = data['created_at']
-        self.updated_at = data['updated_at']
-        self.deleted_date = data['deleted_date'] if 'deleted_date' in data else None
-        self.on_active_roster = data.get('on_active_roster', True)
+        self.id = data["id"]
+        self.first_name = data["first_name"]
+        self.last_name = data["last_name"]
+        self.email = data["email"]
+        self.department = data["department"]
+        self.password = data["password"]
+        self.created_at = data["created_at"]
+        self.updated_at = data["updated_at"]
+        self.deleted_date = data["deleted_date"] if "deleted_date" in data else None
+        self.on_active_roster = data.get("on_active_roster", True)
         self.shifts = []
 
         # class methods go below
@@ -36,19 +36,19 @@ class User:
         is_valid = True
         # special_characters = [':, "#', '!']
 
-        if len(data['first_name']) == 0:
+        if len(data["first_name"]) == 0:
             is_valid = False
-            flash('First Name is required', 'error')
-        if len(data['last_name']) == 0:
+            flash("First Name is required", "error")
+        if len(data["last_name"]) == 0:
             is_valid = False
             flash("Last Name is required", "error")
-        if len(data['password']) < 8:
+        if len(data["password"]) < 8:
             is_valid = False
             flash("Length of password must be at least 8 characters", "error")
-        if data['password'] != data.get('confirm_password', None):
+        if data["password"] != data.get("confirm_password", None):
             is_valid = False
             flash("Passwords do not match", "error")
-        if not EMAIL_REGEX.match(data['email']):
+        if not EMAIL_REGEX.match(data["email"]):
             flash("Invalid email address!")
             is_valid = False
 
@@ -90,15 +90,15 @@ class User:
         all_users = []
         for row in results:
             user_data = {
-                'id': row['id'],
-                'first_name': row['first_name'],
-                'last_name': row['last_name'],
-                'department': row['department'],
-                'email': row['email'],
-                'password': row['password'],
-                'created_at': row['created_at'],
-                'updated_at': row['updated_at'],
-                'on_active_roster': row.get('on_active_roster', True),
+                "id": row["id"],
+                "first_name": row["first_name"],
+                "last_name": row["last_name"],
+                "department": row["department"],
+                "email": row["email"],
+                "password": row["password"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "on_active_roster": row.get("on_active_roster", True),
             }
             new_user = cls(user_data)
             all_users.append(new_user)
@@ -106,38 +106,38 @@ class User:
 
     @classmethod
     def getUserWithShifts(cls, data):
-        query = '''
+        query = """
             SELECT * 
             FROM users
             LEFT JOIN shifts
             ON users.id = shifts.user_id
-            WHERE users.id = %(id)s;'''
+            WHERE users.id = %(id)s;"""
         results = connectToMySQL(cls.db).query_db(query, data)
         print(f"results: {results}")
         output = cls(results[0])
-        if not results[0]['shifts.id'] == None:
+        if not results[0]["shifts.id"] == None:
             for row in results:
                 # print(row)
                 shift_info = {
-                    'id': row['shifts.id'],
-                    'created_at': row['shifts.created_at'],
-                    'updated_at': row['shifts.updated_at'],
-                    'job_id': row['job_id'],
-                    'user_id': row['user_id']
+                    "id": row["shifts.id"],
+                    "created_at": row["shifts.created_at"],
+                    "updated_at": row["shifts.updated_at"],
+                    "job_id": row["job_id"],
+                    "user_id": row["user_id"],
                 }
                 user_info = {
-                    'id': row['id'],
-                    'first_name': row['first_name'],
-                    'last_name': row['last_name'],
-                    'email': row['email'],
-                    'department': row['department'],
-                    'password': row['password'],
-                    'created_at': row['created_at'],
-                    'updated_at': row['updated_at']
+                    "id": row["id"],
+                    "first_name": row["first_name"],
+                    "last_name": row["last_name"],
+                    "email": row["email"],
+                    "department": row["department"],
+                    "password": row["password"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
                 }
 
                 this_shift = shift.Shift(shift_info)
-                this_shift.creator = (user_info)
+                this_shift.creator = user_info
                 output.shifts.append(this_shift)
 
                 print(f"output: {output}")
@@ -147,12 +147,12 @@ class User:
     @staticmethod
     def validate_login(data):
         is_valid = True
-        if len(data['email']) == 0:
+        if len(data["email"]) == 0:
             is_valid = False
-            flash('An email is required', 'error')
-        if len(data['password']) == 0:
+            flash("An email is required", "error")
+        if len(data["password"]) == 0:
             is_valid = False
-            flash('A password is required', 'error')
+            flash("A password is required", "error")
         return is_valid
 
     @classmethod
@@ -189,18 +189,20 @@ class User:
         query = "SELECT * FROM users WHERE deleted_date IS NULL AND on_active_roster = TRUE;"
         results = connectToMySQL(cls.db).query_db(query)
         missing_workers = []
+        if not results:
+            return missing_workers
         for row in results:
-            if row['id'] not in ongoing_user_ids:
+            if row["id"] not in ongoing_user_ids:
                 user_data = {
-                    'id': row['id'],
-                    'first_name': row['first_name'],
-                    'last_name': row['last_name'],
-                    'department': row['department'],
-                    'email': row['email'],
-                    'password': row['password'],
-                    'created_at': row['created_at'],
-                    'updated_at': row['updated_at'],
-                    'on_active_roster': row.get('on_active_roster', True),
+                    "id": row["id"],
+                    "first_name": row["first_name"],
+                    "last_name": row["last_name"],
+                    "department": row["department"],
+                    "email": row["email"],
+                    "password": row["password"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "on_active_roster": row.get("on_active_roster", True),
                 }
                 missing_workers.append(cls(user_data))
         return missing_workers

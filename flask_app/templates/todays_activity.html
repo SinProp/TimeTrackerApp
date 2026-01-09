@@ -108,6 +108,149 @@
         .refresh-button, .custom-control-label {
             transition: all 0.2s ease;
         }
+
+        /* ============ Yet to Clock In - Refined Styling ============ */
+        .awaiting-card {
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fffbf5 0%, #fff8ef 100%);
+            box-shadow: 0 4px 20px rgba(243, 156, 18, 0.12);
+        }
+
+        .awaiting-card .card-header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            border: none;
+            padding: 16px 20px;
+        }
+
+        .awaiting-card .card-header h5 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .awaiting-card .card-header .eyes-icon {
+            font-size: 1.4rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .awaiting-card .count-badge {
+            background: rgba(255,255,255,0.25);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: auto;
+            backdrop-filter: blur(4px);
+        }
+
+        .awaiting-card .card-body {
+            padding: 20px;
+        }
+
+        .workers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .worker-chip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid rgba(243, 156, 18, 0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .worker-chip:hover {
+            border-color: rgba(243, 156, 18, 0.4);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .worker-chip .worker-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .worker-chip .worker-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .worker-chip .worker-dept {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .worker-chip .dismiss-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: none;
+            background: #f8f9fa;
+            color: #95a5a6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 10px;
+            font-size: 0.75rem;
+        }
+
+        .worker-chip .dismiss-btn:hover {
+            background: #e74c3c;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .awaiting-card .helper-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(243, 156, 18, 0.15);
+            color: #95a5a6;
+            font-size: 0.8rem;
+        }
+
+        .awaiting-card .helper-text i {
+            color: #f39c12;
+        }
+
+        /* Dismiss animation */
+        .worker-chip.dismissing {
+            animation: dismissFade 0.3s ease forwards;
+        }
+
+        @keyframes dismissFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.8); }
+        }
         .refresh-button:hover {
             transform: scale(1.05);
         }
@@ -253,34 +396,37 @@
                     </div>
                 </div>
                 
-                <!-- Missing Workers Section -->
+                <!-- Yet to Clock In Section -->
                 {% if missing_workers %}
-                <div class="card mt-3" style="border-left: 4px solid #e74c3c;">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-user-clock me-2"></i> 
-                            Expected Workers Not Signed In
-                            <span class="badge bg-light text-danger ms-2" id="missing-count">{{ missing_workers|length }}</span>
+                <div class="card mt-3 awaiting-card">
+                    <div class="card-header">
+                        <h5>
+                            <span class="eyes-icon">👀</span>
+                            <span>Yet to Clock In</span>
+                            <span class="count-badge" id="missing-count">{{ missing_workers|length }}</span>
                         </h5>
                     </div>
                     <div class="card-body" id="missing-workers-container">
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="workers-grid">
                             {% for worker in missing_workers %}
-                            <div class="missing-worker-badge" data-worker-id="{{ worker.id }}">
-                                <span class="badge bg-danger d-inline-flex align-items-center py-2 px-3" style="font-size: 0.95em;">
-                                    <span class="me-2">{{ worker.first_name }} {{ worker.last_name }}</span>
-                                    <small class="text-light me-2">({{ worker.department }})</small>
-                                    <button type="button" class="btn-close btn-close-white btn-sm dismiss-worker" 
-                                            data-worker-id="{{ worker.id }}" 
-                                            aria-label="Dismiss"
-                                            title="Dismiss for today"></button>
-                                </span>
+                            <div class="worker-chip missing-worker-badge" data-worker-id="{{ worker.id }}">
+                                <div class="worker-info">
+                                    <span class="worker-name">{{ worker.first_name }} {{ worker.last_name }}</span>
+                                    <span class="worker-dept">{{ worker.department }}</span>
+                                </div>
+                                <button type="button" class="dismiss-btn dismiss-worker"
+                                        data-worker-id="{{ worker.id }}"
+                                        aria-label="Dismiss"
+                                        title="Dismiss for today">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                             {% endfor %}
                         </div>
-                        <small class="text-muted mt-2 d-block">
-                            <i class="fas fa-info-circle"></i> Click X to dismiss a worker for today. Resets at midnight.
-                        </small>
+                        <div class="helper-text">
+                            <i class="fas fa-clock"></i>
+                            <span>Click to dismiss for today. List resets at midnight.</span>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -542,13 +688,12 @@
                 e.preventDefault();
                 const workerId = this.dataset.workerId;
                 dismissWorker(workerId);
-                
-                // Hide the badge with animation
-                const badge = this.closest('.missing-worker-badge');
-                badge.style.transition = 'opacity 0.3s ease-out';
-                badge.style.opacity = '0';
+
+                // Hide the chip with smooth animation
+                const chip = this.closest('.missing-worker-badge');
+                chip.classList.add('dismissing');
                 setTimeout(() => {
-                    badge.style.display = 'none';
+                    chip.style.display = 'none';
                     updateMissingCount();
                 }, 300);
             });
