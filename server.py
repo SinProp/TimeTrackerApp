@@ -1,12 +1,15 @@
+from dotenv import load_dotenv
+
+load_dotenv()  # Must be called before any flask_app imports
+
 from flask_app import app
 from flask_app.controllers import users, jobs, shifts, version
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from flask_app.utils.scheduler_tasks import automated_job_sync
+from flask_app.utils.scheduler_tasks import automated_job_sync, auto_end_shifts_at_330pm
 import atexit
 import pytz
 
-# from dotenv import load_dotenv
 # from flask_app.config.config import ss_client
 # from flask_app.controllers.webhooks_controller import webhooks_blueprint, setup_webhook
 
@@ -27,15 +30,24 @@ if __name__ == "__main__":
     scheduler = BackgroundScheduler()
 
     # Define Eastern Time zone
-    eastern = pytz.timezone('US/Eastern')
+    eastern = pytz.timezone("US/Eastern")
 
     # Schedule the job to run daily at 6:00 AM EST
     scheduler.add_job(
         func=automated_job_sync,
         trigger=CronTrigger(hour=6, minute=0, timezone=eastern),
-        id='daily_smartsheet_sync',
-        name='Daily Smartsheet Job Sync',
-        replace_existing=True
+        id="daily_smartsheet_sync",
+        name="Daily Smartsheet Job Sync",
+        replace_existing=True,
+    )
+
+    # Schedule auto-end shifts at 3:30 PM EST daily
+    scheduler.add_job(
+        func=auto_end_shifts_at_330pm,
+        trigger=CronTrigger(hour=15, minute=30, timezone=eastern),
+        id="daily_auto_end_shifts",
+        name="Daily Auto-End Shifts at 3:30 PM",
+        replace_existing=True,
     )
 
     # Start the scheduler

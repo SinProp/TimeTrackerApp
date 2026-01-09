@@ -1,10 +1,30 @@
 from flask_app.models.job import Job
+from flask_app.models.shift import Shift
 from datetime import datetime
 import logging
 
 # Set up logging for scheduler
 logging.basicConfig(level=logging.INFO)
 scheduler_logger = logging.getLogger("scheduler")
+
+
+def auto_end_shifts_at_330pm():
+    """
+    Automatically end all open shifts at 3:30 PM EST.
+    Sets updated_at to 3:30 PM on the same day the shift was created.
+    Runs daily at 3:30 PM EST.
+    """
+    try:
+        scheduler_logger.info(f"Starting auto-end shifts at {datetime.now()}")
+
+        result = Shift.auto_end_open_shifts_at_330pm()
+
+        scheduler_logger.info(f"Auto-end shifts completed: {result}")
+        return result
+
+    except Exception as e:
+        scheduler_logger.error(f"Error in auto-end shifts: {str(e)}")
+        return f"Error: {str(e)}"
 
 
 def automated_job_sync():

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stale Shift Remediation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --accent-color: #f39c12;
+        --dark-color: #2c3e50;
+        --light-color: #ecf0f1;
+        --warning-color: #e74c3c;
+      }
+
+      body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .custom-header {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        padding: 15px 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+
+      .jumbotron {
+        background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8)),
+                    url('/static/img/IMLOGO.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        padding: 4rem 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      }
+
+      .btn {
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+
+      .table {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      }
+
+      .table thead {
+        background-color: var(--dark-color);
+        color: white;
+      }
+
+      .shifts-card {
+        background-color: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      }
+
+      .card-title {
+        position: relative;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid var(--warning-color);
+        color: var(--dark-color);
+        font-weight: 600;
+      }
+
+      .logo-footer {
+        max-height: 100px;
+        margin-top: 30px;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+      }
+
+      .logo-footer:hover {
+        opacity: 1;
+      }
+
+      .stale-badge {
+        background-color: var(--warning-color);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+      }
+
+      .info-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+      }
+    </style>
+</head>
+<body>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="#" class="navbar-brand d-flex justify-content-center align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">Stale Shift Remediation</span></strong>
+            </a>
+        </div>
+    </header>
+
+    <main role="main">
+        <section class="jumbotron text-center">
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-3"><i class="fas fa-exclamation-triangle text-warning me-3"></i>Stale Shift Remediation</h1>
+                <p class="lead text-muted mb-4">Fix shifts that were never clocked out (open longer than 12 hours). These shifts will be set to end at 3:30 PM on the day they started.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                    <a href="/dashboard" class="btn btn-primary"><i class="fas fa-home me-2"></i>Job Dashboard</a>
+                    <a href="/manage_shifts" class="btn btn-secondary"><i class="fas fa-cogs me-2"></i>Manage Shifts</a>
+                    <a href="/end_of_day" class="btn btn-info"><i class="fas fa-sign-out-alt me-2"></i>E.O.D. Punch Out</a>
+                    <a href="/logout" class="btn btn-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Flash Messages -->
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'danger' else 'warning' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="py-5 bg-light">
+            <div class="container">
+                {% if logged_in_user.department == 'ADMINISTRATIVE' %}
+                    <div class="shifts-card">
+                        <h2 class="card-title">
+                            <i class="fas fa-history me-2"></i>Stale Shifts ({{ shift_count }} found)
+                        </h2>
+
+                        <div class="info-box">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>How this works:</strong> Stale shifts are open shifts that started more than 12 hours ago and were never clocked out.
+                            Fixing them will set their end time to <strong>3:30 PM</strong> on the day they were started.
+                        </div>
+
+                        {% if stale_shifts %}
+                            <!-- Fix All Button at Top -->
+                            <div class="d-flex justify-content-end mb-3">
+                                <form action="/admin/fix_all_stale_shifts" method="post" onsubmit="return confirm('Are you sure you want to fix ALL {{ shift_count }} stale shifts? This will set their end time to 3:30 PM on the day they started.');">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-wrench me-2"></i>Fix All {{ shift_count }} Stale Shifts
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-user me-2"></i>Employee</th>
+                                            <th><i class="fas fa-building me-2"></i>Department</th>
+                                            <th><i class="fas fa-briefcase me-2"></i>Job</th>
+                                            <th><i class="fas fa-calendar-plus me-2"></i>Shift Started</th>
+                                            <th><i class="fas fa-hourglass-half me-2"></i>Hours Open</th>
+                                            <th><i class="fas fa-clock me-2"></i>Will End At</th>
+                                            <th><i class="fas fa-tasks me-2"></i>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for shift in stale_shifts %}
+                                        <tr>
+                                            <td>{{ shift.creator.first_name }} {{ shift.creator.last_name }}</td>
+                                            <td>{{ shift.creator.department }}</td>
+                                            <td>
+                                                {% if shift.job %}
+                                                    <a href="/show/job/{{ shift.job.id }}">{{ shift.job.im_number }}</a>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ shift.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                            <td><span class="stale-badge">{{ shift.hours_open }} hrs</span></td>
+                                            <td>{{ shift.created_at.strftime('%m/%d/%Y') }} 03:30 PM</td>
+                                            <td>
+                                                <form action="/admin/fix_stale_shift/{{ shift.id }}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Fix this shift? End time will be set to 3:30 PM on {{ shift.created_at.strftime('%m/%d/%Y') }}.');">
+                                                        <i class="fas fa-wrench me-1"></i>Fix
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Fix All Button at Bottom -->
+                            <div class="d-flex justify-content-end mt-4">
+                                <form action="/admin/fix_all_stale_shifts" method="post" onsubmit="return confirm('Are you sure you want to fix ALL {{ shift_count }} stale shifts? This will set their end time to 3:30 PM on the day they started.');">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-wrench me-2"></i>Fix All {{ shift_count }} Stale Shifts
+                                    </button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>No stale shifts found! All shifts have been properly clocked out.
+                            </div>
+                        {% endif %}
+
+                        <!-- Fix Negative Duration Shifts Section -->
+                        <hr class="my-4">
+                        <h4 class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Fix Negative Duration Shifts</h4>
+                        <div class="info-box" style="background-color: #f8d7da; border-left-color: #dc3545;">
+                            <i class="fas fa-bug me-2 text-danger"></i>
+                            <strong>Data Repair:</strong> If you see shifts with negative durations (like "-1 day, 21:39:00"),
+                            use this tool to fix them. This corrects shifts where the end time was incorrectly set before the start time.
+                        </div>
+                        <form action="/admin/fix_negative_durations" method="post" onsubmit="return confirm('Fix all shifts with negative durations? Their end time will be set to their start time (0 hours).');">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="fas fa-tools me-2"></i>Fix Negative Duration Shifts
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>You do not have permission to view this page.
+                    </div>
+                {% endif %}
+
+                <div class="text-center mt-5">
+                    <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Company Logo">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

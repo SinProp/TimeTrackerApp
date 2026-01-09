@@ -350,3 +350,231 @@ class Shift:
 
         result = connectToMySQL(cls.db_name).query_db(query, tuple(flat_values))
         return len(shifts_data) if result is not False else 0
+
+    # ============ Auto-End Shifts at 3:30 PM ============
+
+    @classmethod
+    def auto_end_open_shifts_at_330pm(cls):
+        """
+        End all open shifts by setting updated_at to 3:30 PM on the same day they were created.
+        This runs daily at 3:30 PM EST to auto-clock-out workers.
+
+        IMPORTANT: Only ends shifts that started BEFORE 3:30 PM to avoid negative durations.
+        Shifts that started after 3:30 PM are left open for manual handling.
+
+        Returns a summary of how many shifts were ended.
+        """
+        # Count how many shifts will be ended BEFORE updating
+        # Only count shifts that started BEFORE 3:30 PM to avoid negative durations
+        count_query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NULL
+            AND DATE(created_at) = CURDATE()
+            AND TIME(created_at) < '15:30:00';
+        """
+        count_result = connectToMySQL(cls.db_name).query_db(count_query)
+        count = count_result[0]["count"] if count_result else 0
+
+        if count > 0:
+            # Set updated_at to 3:30 PM on the day the shift was created
+            # Only for shifts that started BEFORE 3:30 PM
+            query = """
+                UPDATE shifts
+                SET updated_at = DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                WHERE updated_at IS NULL
+                AND DATE(created_at) = CURDATE()
+                AND TIME(created_at) < '15:30:00';
+            """
+            connectToMySQL(cls.db_name).query_db(query)
+
+        return f"Ended {count} open shifts at 3:30 PM"
+
+    # ============ Stale Shift Remediation ============
+
+    @classmethod
+    def get_stale_shifts(cls, hours_threshold=12):
+        """
+        Find shifts that are 'stale' - open shifts that started more than X hours ago.
+        These are shifts that were never clocked out.
+
+        Args:
+            hours_threshold: Number of hours after which an open shift is considered stale (default 12)
+
+        Returns:
+            List of Shift objects with creator and job data
+        """
+        query = """
+            SELECT shifts.*,
+                users.id as user_id, users.first_name, users.last_name, users.email,
+                users.password, users.department, users.created_at as users_created_at,
+                users.updated_at as users_updated_at,
+                jobs.id as job_id_alias, jobs.im_number, jobs.general_contractor, jobs.job_scope,
+                jobs.estimated_hours, jobs.user_id as job_user_id, jobs.context,
+                jobs.created_at as job_created_at, jobs.updated_at as job_updated_at, jobs.status,
+                TIMESTAMPDIFF(HOUR, shifts.created_at, NOW()) as hours_open
+            FROM shifts
+            JOIN users ON shifts.user_id = users.id
+            LEFT JOIN jobs ON shifts.job_id = jobs.id
+            WHERE shifts.updated_at IS NULL
+            AND TIMESTAMPDIFF(HOUR, shifts.created_at, NOW()) >= %(hours_threshold)s
+            ORDER BY shifts.created_at ASC;
+        """
+        results = connectToMySQL(cls.db_name).query_db(
+            query, {"hours_threshold": hours_threshold}
+        )
+
+        if not results:
+            return []
+
+        stale_shifts = []
+        for row in results:
+            shift_info = {
+                "id": row["id"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "elapsed_time": None,
+                "job_id": row["job_id"],
+                "user_id": row["user_id"],
+                "note": row["note"],
+            }
+            user_info = {
+                "id": row["user_id"],
+                "first_name": row["first_name"],
+                "last_name": row["last_name"],
+                "email": row["email"],
+                "password": row["password"],
+                "department": row["department"],
+                "created_at": row["users_created_at"],
+                "updated_at": row["users_updated_at"],
+            }
+            this_shift = cls(shift_info)
+            this_shift.creator = user.User(user_info)
+            this_shift.hours_open = row["hours_open"]
+
+            if row.get("im_number") is not None:
+                job_info = {
+                    "id": row["job_id_alias"],
+                    "im_number": row["im_number"],
+                    "general_contractor": row["general_contractor"],
+                    "job_scope": row["job_scope"],
+                    "estimated_hours": row["estimated_hours"],
+                    "user_id": row["job_user_id"],
+                    "context": row["context"],
+                    "created_at": row["job_created_at"],
+                    "updated_at": row["job_updated_at"],
+                    "status": row["status"],
+                }
+                this_shift.job = job.Job(job_info)
+            else:
+                this_shift.job = None
+
+            stale_shifts.append(this_shift)
+
+        return stale_shifts
+
+    @classmethod
+    def fix_stale_shift(cls, shift_id):
+        """
+        Fix a single stale shift by setting its updated_at appropriately.
+
+        - If shift started BEFORE 3:30 PM: end at 3:30 PM same day
+        - If shift started AT or AFTER 3:30 PM: end at start time (0 duration)
+
+        This avoids negative durations when shifts started after 3:30 PM.
+
+        Args:
+            shift_id: The ID of the shift to fix
+
+        Returns:
+            True if successful, False otherwise
+        """
+        query = """
+            UPDATE shifts
+            SET updated_at = CASE
+                WHEN TIME(created_at) < '15:30:00'
+                THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                ELSE created_at
+            END
+            WHERE id = %(shift_id)s AND updated_at IS NULL;
+        """
+        result = connectToMySQL(cls.db_name).query_db(query, {"shift_id": shift_id})
+        return result is not False
+
+    @classmethod
+    def fix_all_stale_shifts(cls, hours_threshold=12):
+        """
+        Fix all stale shifts by setting their updated_at appropriately.
+
+        - If shift started BEFORE 3:30 PM: end at 3:30 PM same day
+        - If shift started AT or AFTER 3:30 PM: end at start time (0 duration)
+
+        This avoids negative durations when shifts started after 3:30 PM.
+
+        Args:
+            hours_threshold: Number of hours after which an open shift is considered stale
+
+        Returns:
+            Number of shifts fixed
+        """
+        # Count how many shifts will be fixed BEFORE updating
+        # (ROW_COUNT() doesn't work across separate connections)
+        count_query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NULL
+            AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
+        """
+        count_result = connectToMySQL(cls.db_name).query_db(
+            count_query, {"hours_threshold": hours_threshold}
+        )
+        count = count_result[0]["count"] if count_result else 0
+
+        if count > 0:
+            query = """
+                UPDATE shifts
+                SET updated_at = CASE
+                    WHEN TIME(created_at) < '15:30:00'
+                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                    ELSE created_at
+                END
+                WHERE updated_at IS NULL
+                AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
+            """
+            connectToMySQL(cls.db_name).query_db(
+                query, {"hours_threshold": hours_threshold}
+            )
+
+        return count
+
+    @classmethod
+    def fix_negative_duration_shifts(cls):
+        """
+        Fix shifts where updated_at < created_at (resulting in negative durations).
+
+        This corrects corrupted data from the old auto-end logic that set end times
+        to 3:30 PM even for shifts that started after 3:30 PM.
+
+        For these shifts, sets updated_at = created_at (0 duration).
+
+        Returns:
+            Number of shifts fixed
+        """
+        # Count corrupted shifts
+        count_query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NOT NULL
+            AND updated_at < created_at;
+        """
+        count_result = connectToMySQL(cls.db_name).query_db(count_query)
+        count = count_result[0]["count"] if count_result else 0
+
+        if count > 0:
+            # Fix by setting end time to start time (0 duration)
+            query = """
+                UPDATE shifts
+                SET updated_at = created_at
+                WHERE updated_at IS NOT NULL
+                AND updated_at < created_at;
+            """
+            connectToMySQL(cls.db_name).query_db(query)
+
+        return count

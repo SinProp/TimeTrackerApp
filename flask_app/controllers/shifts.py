@@ -679,3 +679,114 @@ def update_active_shift(id):
         flash("An error occurred while updating the shift.", "danger")
 
     return redirect("/todays_activity")
+
+
+# ============ Stale Shift Remediation ============
+
+
+@app.route("/admin/stale_shifts")
+def stale_shifts():
+    """
+    Admin page to view and fix stale shifts (open shifts > 12 hours).
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    # Get stale shifts (default threshold: 12 hours)
+    stale_shifts_list = Shift.get_stale_shifts(hours_threshold=12)
+
+    return render_template(
+        "stale_shifts.html",
+        stale_shifts=stale_shifts_list,
+        logged_in_user=logged_in_user,
+        shift_count=len(stale_shifts_list),
+    )
+
+
+@app.route("/admin/fix_stale_shift/<int:shift_id>", methods=["POST"])
+def fix_stale_shift(shift_id):
+    """
+    Fix a single stale shift by setting its end time to 3:30 PM on the day it started.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    try:
+        Shift.fix_stale_shift(shift_id)
+        flash("Shift fixed successfully! End time set to 3:30 PM.", "success")
+    except Exception as e:
+        print(f"Error fixing stale shift {shift_id}: {e}")
+        flash("An error occurred while fixing the shift.", "danger")
+
+    return redirect("/admin/stale_shifts")
+
+
+@app.route("/admin/fix_all_stale_shifts", methods=["POST"])
+def fix_all_stale_shifts():
+    """
+    Fix all stale shifts by setting their end times to 3:30 PM on the day they started.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    try:
+        fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
+        flash(f"Successfully fixed {fixed_count} stale shifts!", "success")
+    except Exception as e:
+        print(f"Error fixing all stale shifts: {e}")
+        flash("An error occurred while fixing stale shifts.", "danger")
+
+    return redirect("/admin/stale_shifts")
+
+
+@app.route("/admin/fix_negative_durations", methods=["POST"])
+def fix_negative_durations():
+    """
+    Fix all shifts with negative durations (where end time < start time).
+    This corrects corrupted data from the old auto-end logic.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    try:
+        fixed_count = Shift.fix_negative_duration_shifts()
+        if fixed_count > 0:
+            flash(
+                f"Successfully fixed {fixed_count} shifts with negative durations!",
+                "success",
+            )
+        else:
+            flash("No shifts with negative durations found.", "info")
+    except Exception as e:
+        print(f"Error fixing negative duration shifts: {e}")
+        flash("An error occurred while fixing shifts.", "danger")
+
+    return redirect("/admin/stale_shifts")
