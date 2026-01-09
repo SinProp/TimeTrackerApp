@@ -54,6 +54,17 @@ def create_shift():
     else:
         user_id = session["user_id"]
 
+    # Check if this is a hidden job and make it visible if production user clocks in
+    job_data = {"id": job_id}
+    job = Job.get_one(job_data)
+    if job and not job.visible_to_production:
+        # Get the user who is clocking in
+        clocking_user = User.get_by_id({"id": user_id})
+        if clocking_user and clocking_user.department != "ADMINISTRATIVE":
+            # Production user clocking into hidden job - make it visible
+            Job.make_visible_to_production(job_id)
+            print(f"Job {job.im_number} made visible to production after clock-in")
+
     start_time_str = request.form.get("start_time")
     if start_time_str:
         try:
@@ -571,6 +582,12 @@ def todays_activity():
     # OPTIMIZED: get_ongoing() now includes job data via JOIN, no need for N+1 loop
     ongoing_shifts = Shift.get_ongoing()
 
+    # Get list of user IDs with ongoing shifts for missing workers calculation
+    ongoing_user_ids = [shift.creator.id for shift in ongoing_shifts] if ongoing_shifts else []
+
+    # Get missing workers (on roster but not clocked in)
+    missing_workers = User.get_missing_workers_today(ongoing_user_ids)
+
     shifts_started_today = Shift.get_started_today()
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -632,6 +649,7 @@ def todays_activity():
         total_hours=formatted_hours,
         all_jobs=all_jobs,
         user=logged_in_user,
+        missing_workers=missing_workers,
     )
 
 

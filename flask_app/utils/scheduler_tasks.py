@@ -33,6 +33,10 @@ def automated_job_sync():
     Runs daily at 6 AM EST.
 
     Optimized to use bulk operations instead of N+1 queries.
+    
+    Smart sync behavior:
+    - If job exists (by IM number): Update it and make visible to production
+    - If job is new: Insert it with visible_to_production=TRUE
     """
     try:
         scheduler_logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
@@ -51,24 +55,37 @@ def automated_job_sync():
         im_numbers = [job["im_number"] for job in approved_jobs]
         existing_im_numbers = Job.get_existing_im_numbers(im_numbers)
 
-        # Filter to only new jobs
-        new_jobs = [
-            job for job in approved_jobs if job["im_number"] not in existing_im_numbers
-        ]
+        # Separate into new jobs and existing jobs to update
+        new_jobs = []
+        updated_count = 0
+        
+        for job in approved_jobs:
+            if job["im_number"] in existing_im_numbers:
+                # Update existing job and make it visible
+                try:
+                    Job.update_from_dataverse(job["im_number"], {
+                        "general_contractor": job["general_contractor"],
+                        "job_scope": job["job_scope"],
+                    })
+                    updated_count += 1
+                    scheduler_logger.info(f"Updated existing job IM #{job['im_number']} from Dataverse")
+                except Exception as e:
+                    scheduler_logger.error(f"Error updating job {job['im_number']}: {e}")
+            else:
+                # New job - will be bulk inserted
+                new_jobs.append(job)
 
-        skipped_count = len(approved_jobs) - len(new_jobs)
-
-        # Log which jobs are being processed
+        # Log which new jobs are being processed
         for job in new_jobs:
             scheduler_logger.info(f"Adding new job with IM number: {job['im_number']}")
 
         # OPTIMIZED: Insert all new jobs in one query instead of N queries
-        added_count = Job.bulk_add_records(new_jobs)
+        added_count = Job.bulk_add_records(new_jobs) if new_jobs else 0
 
         scheduler_logger.info(
-            f"Dataverse sync completed. Added: {added_count}, Skipped: {skipped_count}"
+            f"Dataverse sync completed. Added: {added_count}, Updated: {updated_count}"
         )
-        return f"Sync completed successfully. Added {added_count} jobs, skipped {skipped_count} duplicates."
+        return f"Sync completed successfully. Added {added_count} jobs, updated {updated_count} existing jobs."
 
     except Exception as e:
         scheduler_logger.error(f"Error in automated Dataverse sync: {str(e)}")

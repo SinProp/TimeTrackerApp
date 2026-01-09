@@ -23,6 +23,8 @@ class Job:
         self.created_at = db_data["created_at"]
         self.updated_at = db_data["updated_at"]
         self.status = db_data["status"]
+        self.visible_to_production = db_data.get("visible_to_production", True)
+        self.source = db_data.get("source", "manual")
         self.shifts = []
         self.shift_users = []  # Add this line
 
@@ -52,6 +54,9 @@ class Job:
         job_dict = {}
         for row in results:
             if row["id"] not in job_dict:
+                # Add default values for new fields if they don't exist in DB yet
+                row.setdefault("visible_to_production", True)
+                row.setdefault("source", "manual")
                 new_job = cls(row)
                 new_job.shift_users = []
                 job_dict[row["id"]] = new_job
@@ -284,3 +289,115 @@ class Job:
 
         result = connectToMySQL(cls.db_name).query_db(query, tuple(flat_values))
         return len(jobs_data) if result is not False else 0
+
+    # ============ Office Job Visibility Methods ============
+
+    @classmethod
+    def get_all_for_user(cls, department):
+        """
+        Get all jobs filtered by user department.
+        Admins see all jobs, production users see only visible jobs.
+        """
+        today = datetime.now().strftime("%Y-%m-%d")
+        if department == "ADMINISTRATIVE":
+            # Admins see all jobs
+            query = """
+                SELECT jobs.*,
+                    shifts.created_at AS shift_start,
+                    shifts.updated_at AS shift_end,
+                    shift_users.id AS shift_user_id,
+                    shift_users.first_name AS shift_user_first_name
+                FROM jobs
+                LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
+                LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
+                ORDER BY jobs.id;
+            """
+        else:
+            # Non-admins see only visible jobs
+            query = """
+                SELECT jobs.*,
+                    shifts.created_at AS shift_start,
+                    shifts.updated_at AS shift_end,
+                    shift_users.id AS shift_user_id,
+                    shift_users.first_name AS shift_user_first_name
+                FROM jobs
+                LEFT JOIN shifts ON shifts.job_id = jobs.id AND DATE(shifts.created_at) = %s
+                LEFT JOIN users AS shift_users ON shifts.user_id = shift_users.id
+                WHERE jobs.visible_to_production = TRUE
+                ORDER BY jobs.id;
+            """
+        results = connectToMySQL(cls.db_name).query_db(query, (today,))
+        if not results:
+            return []
+
+        job_dict = {}
+        for row in results:
+            if row["id"] not in job_dict:
+                row.setdefault("visible_to_production", True)
+                row.setdefault("source", "manual")
+                new_job = cls(row)
+                new_job.shift_users = []
+                job_dict[row["id"]] = new_job
+
+            if row["shift_user_first_name"]:
+                job_dict[row["id"]].shift_users.append(row["shift_user_first_name"])
+
+        return list(job_dict.values())
+
+    @classmethod
+    def save_office_job(cls, data):
+        """
+        Save a new office/pre-production job (hidden from production by default).
+        """
+        query = """INSERT INTO jobs 
+            (im_number, general_contractor, job_scope, estimated_hours, context, user_id, visible_to_production, source) 
+            VALUES (%(im_number)s, %(general_contractor)s, %(job_scope)s, %(estimated_hours)s, %(context)s, %(user_id)s, FALSE, 'office');"""
+        return connectToMySQL(cls.db_name).query_db(query, data)
+
+    @classmethod
+    def make_visible_to_production(cls, job_id):
+        """
+        Make a job visible to production workers.
+        Called when a production user clocks into a hidden job.
+        """
+        query = "UPDATE jobs SET visible_to_production = TRUE WHERE id = %(id)s;"
+        return connectToMySQL(cls.db_name).query_db(query, {"id": job_id})
+
+    @classmethod
+    def toggle_visibility(cls, job_id):
+        """
+        Toggle the visible_to_production status for a job.
+        """
+        query = "UPDATE jobs SET visible_to_production = NOT visible_to_production WHERE id = %(id)s;"
+        return connectToMySQL(cls.db_name).query_db(query, {"id": job_id})
+
+    @classmethod
+    def update_from_dataverse(cls, im_number, data):
+        """
+        Update an existing job with Dataverse data and make it visible.
+        Used when Dataverse approves a job that was manually created.
+        """
+        query = """UPDATE jobs 
+            SET general_contractor = %(general_contractor)s, 
+                job_scope = %(job_scope)s, 
+                visible_to_production = TRUE, 
+                source = 'dataverse',
+                updated_at = NOW() 
+            WHERE im_number = %(im_number)s;"""
+        data["im_number"] = im_number
+        return connectToMySQL(cls.db_name).query_db(query, data)
+
+    @classmethod
+    def get_by_im_number(cls, im_number):
+        """
+        Get a job by its IM number.
+        Returns the job or None if not found.
+        """
+        query = "SELECT * FROM jobs WHERE im_number = %(im_number)s;"
+        results = connectToMySQL(cls.db_name).query_db(query, {"im_number": im_number})
+        if not results:
+            return None
+        row = results[0]
+        row.setdefault("visible_to_production", True)
+        row.setdefault("source", "manual")
+        return cls(row)

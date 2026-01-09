@@ -182,6 +182,7 @@
                     {% if logged_in_user.department == 'ADMINISTRATIVE' %}
                         <a href="/manage_shifts" class="btn btn-primary"><i class="fas fa-tasks me-2"></i>Manage Shifts</a>
                         <a href="/new/job" class="btn btn-success"><i class="fas fa-plus-circle me-2"></i>Add New IM #</a>
+                        <a href="/admin/create_office_job" class="btn btn-secondary"><i class="fas fa-building me-2"></i>Create Office Job</a>
                         <a href="/manage_users" class="btn btn-warning"><i class="fas fa-users me-2"></i>Manage Users</a>
                         <a href="/batch_assign_shifts" class="btn btn-info text-white"><i class="fas fa-user-clock me-2"></i>Batch Assign Shifts</a>
                         <a href="/todays_activity" class="btn btn-primary"><i class="fas fa-chart-bar me-2"></i>Today's Activity</a>
@@ -257,7 +258,12 @@
                                         <div class="card-body d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-start mb-3">
                                                 <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
-                                                <span class="badge badge-active">Active</span>
+                                                <div>
+                                                    {% if logged_in_user.department == 'ADMINISTRATIVE' and not job.visible_to_production %}
+                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Office Only</span>
+                                                    {% endif %}
+                                                    <span class="badge badge-active">Active</span>
+                                                </div>
                                             </div>
                                             <h6 class="card-subtitle mb-3 text-muted">{{ job.general_contractor }}</h6>
                                             <p class="card-text">{{ job.job_scope }}</p>
@@ -278,6 +284,17 @@
                                                 <a href="/add/shift/{{ job.id }}" class="btn btn-sm btn-info text-white"><i class="fas fa-play me-1"></i>Start Shift</a>
                                                 {% if logged_in_user.department == 'ADMINISTRATIVE' %}
                                                     <a class="btn btn-sm btn-success" href="/edit/job/{{job.id}}"><i class="fas fa-edit me-1"></i>Edit</a>
+                                                    <form action="/admin/toggle_job_visibility/{{ job.id }}" method="POST" style="display:inline;">
+                                                        {% if job.visible_to_production %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Click to hide from production">
+                                                                <i class="fas fa-eye-slash me-1"></i>Hide
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Click to show to production">
+                                                                <i class="fas fa-eye me-1"></i>Show
+                                                            </button>
+                                                        {% endif %}
+                                                    </form>
                                                     <a class="btn btn-sm btn-danger" href="/destroy/job/{{job.id}}"><i class="fas fa-trash me-1"></i>Delete</a>
                                                 {% endif %}
                                             </div>
@@ -301,7 +318,12 @@
                                         <div class="card-body d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-start mb-3">
                                                 <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
-                                                <span class="badge bg-danger">Inactive</span>
+                                                <div>
+                                                    {% if logged_in_user.department == 'ADMINISTRATIVE' and not job.visible_to_production %}
+                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Office Only</span>
+                                                    {% endif %}
+                                                    <span class="badge bg-danger">Inactive</span>
+                                                </div>
                                             </div>
                                             <h6 class="card-subtitle mb-3 text-muted">{{ job.general_contractor }}</h6>
                                             <p class="card-text">{{ job.job_scope }}</p>
@@ -310,6 +332,17 @@
                                                 <a href="/add/shift/{{ job.id }}" class="btn btn-sm btn-info text-white"><i class="fas fa-play me-1"></i>Start Shift</a>
                                                 {% if logged_in_user.department == 'ADMINISTRATIVE' %}
                                                     <a class="btn btn-sm btn-success" href="/edit/job/{{job.id}}"><i class="fas fa-edit me-1"></i>Edit</a>
+                                                    <form action="/admin/toggle_job_visibility/{{ job.id }}" method="POST" style="display:inline;">
+                                                        {% if job.visible_to_production %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Click to hide from production">
+                                                                <i class="fas fa-eye-slash me-1"></i>Hide
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Click to show to production">
+                                                                <i class="fas fa-eye me-1"></i>Show
+                                                            </button>
+                                                        {% endif %}
+                                                    </form>
                                                     <a class="btn btn-sm btn-danger" href="/destroy/job/{{job.id}}"><i class="fas fa-trash me-1"></i>Delete</a>
                                                 {% endif %}
                                             </div>

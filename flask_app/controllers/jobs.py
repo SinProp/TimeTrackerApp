@@ -47,8 +47,11 @@ def create_job():
 def dashboard():
     if "user_id" not in session:
         return redirect("/logout")
-    jobs = Job.get_all()
-    return render_template("dashboard.html", jobs=jobs)
+    user_data = {"id": session["user_id"]}
+    user = User.get_by_id(user_data)
+    # Get jobs filtered by user department (admins see all, others see visible only)
+    jobs = Job.get_all_for_user(user.department)
+    return render_template("dashboard.html", jobs=jobs, logged_in_user=user)
 
 
 @app.route("/show/job/<int:id>")
@@ -208,3 +211,79 @@ def manual_sync_test():
         return jsonify({"message": result}), 200
     except Exception as e:
         return jsonify({"error": f"Manual sync failed: {str(e)}"}), 500
+
+
+# ============ Office Job Management ============
+
+
+@app.route("/admin/create_office_job", methods=["GET", "POST"])
+def create_office_job():
+    """
+    Create a new office/pre-production job.
+    These jobs are hidden from production workers until they're approved in Dataverse
+    or manually made visible.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized: Only admins can create office jobs.", "danger")
+        return redirect("/dashboard")
+
+    if request.method == "POST":
+        # Validate the job data
+        if not Job.validate_job(request.form):
+            return redirect("/admin/create_office_job")
+
+        data = {
+            "im_number": request.form["im_number"],
+            "general_contractor": request.form["general_contractor"],
+            "job_scope": request.form["job_scope"],
+            "estimated_hours": request.form.get("estimated_hours", "0000"),
+            "context": request.form.get("context", ""),
+            "user_id": session["user_id"],
+        }
+
+        # Check if IM number already exists
+        if Job.check_im_number_exists({"im_number": data["im_number"]}):
+            flash(f"IM number {data['im_number']} already exists.", "error")
+            return redirect("/admin/create_office_job")
+
+        try:
+            Job.save_office_job(data)
+            flash(f"Office job {data['im_number']} created successfully! (Hidden from production)", "success")
+            return redirect("/dashboard")
+        except Exception as e:
+            print(f"Error creating office job: {e}")
+            flash("An error occurred while creating the office job.", "danger")
+            return redirect("/admin/create_office_job")
+
+    return render_template("create_office_job.html", logged_in_user=logged_in_user)
+
+
+@app.route("/admin/toggle_job_visibility/<int:id>", methods=["POST"])
+def toggle_job_visibility(id):
+    """
+    Toggle the visibility of a job to production workers.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized: Only admins can toggle job visibility.", "danger")
+        return redirect("/dashboard")
+
+    try:
+        Job.toggle_visibility(id)
+        flash("Job visibility updated successfully.", "success")
+    except Exception as e:
+        print(f"Error toggling job visibility: {e}")
+        flash("An error occurred while updating job visibility.", "danger")
+
+    return redirect("/dashboard")

@@ -20,6 +20,7 @@ class User:
         self.created_at = data['created_at']
         self.updated_at = data['updated_at']
         self.deleted_date = data['deleted_date'] if 'deleted_date' in data else None
+        self.on_active_roster = data.get('on_active_roster', True)
         self.shifts = []
 
         # class methods go below
@@ -97,6 +98,7 @@ class User:
                 'password': row['password'],
                 'created_at': row['created_at'],
                 'updated_at': row['updated_at'],
+                'on_active_roster': row.get('on_active_roster', True),
             }
             new_user = cls(user_data)
             all_users.append(new_user)
@@ -173,4 +175,42 @@ class User:
     @classmethod
     def destroy(cls, data):
         query = "DELETE FROM users WHERE id = %(id)s;"
+        return connectToMySQL(cls.db).query_db(query, data)
+
+    @classmethod
+    def get_missing_workers_today(cls, ongoing_user_ids):
+        """
+        Get users on active roster who haven't clocked in today.
+        Args:
+            ongoing_user_ids: list of user IDs with ongoing shifts
+        Returns:
+            List of User objects for workers expected but not signed in
+        """
+        query = "SELECT * FROM users WHERE deleted_date IS NULL AND on_active_roster = TRUE;"
+        results = connectToMySQL(cls.db).query_db(query)
+        missing_workers = []
+        for row in results:
+            if row['id'] not in ongoing_user_ids:
+                user_data = {
+                    'id': row['id'],
+                    'first_name': row['first_name'],
+                    'last_name': row['last_name'],
+                    'department': row['department'],
+                    'email': row['email'],
+                    'password': row['password'],
+                    'created_at': row['created_at'],
+                    'updated_at': row['updated_at'],
+                    'on_active_roster': row.get('on_active_roster', True),
+                }
+                missing_workers.append(cls(user_data))
+        return missing_workers
+
+    @classmethod
+    def update_roster_status(cls, data):
+        """
+        Toggle the on_active_roster status for a user.
+        Args:
+            data: dict with 'id' and 'on_roster' (boolean)
+        """
+        query = "UPDATE users SET on_active_roster = %(on_roster)s WHERE id = %(id)s;"
         return connectToMySQL(cls.db).query_db(query, data)

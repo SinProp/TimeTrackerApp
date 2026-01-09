@@ -200,3 +200,32 @@ def destroy_user(id):
         return redirect("/dashboard")
     User.soft_delete({"id": id})
     return redirect("/manage_users")
+
+
+@app.route("/toggle_roster/<int:id>", methods=["POST"])
+def toggle_roster(id):
+    """
+    Toggle a user's active roster status.
+    Only admins can toggle roster status.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized: Only admins can modify roster status.", "danger")
+        return redirect("/dashboard")
+
+    # Get the current user's roster status
+    user_to_toggle = User.get_by_id({"id": id})
+    if not user_to_toggle:
+        flash("User not found.", "danger")
+        return redirect("/manage_users")
+
+    # Toggle the roster status
+    new_status = not user_to_toggle.on_active_roster
+    User.update_roster_status({"id": id, "on_roster": new_status})
+
+    status_text = "added to" if new_status else "removed from"
+    flash(f"{user_to_toggle.first_name} {user_to_toggle.last_name} {status_text} active roster.", "success")
+    return redirect("/manage_users")
