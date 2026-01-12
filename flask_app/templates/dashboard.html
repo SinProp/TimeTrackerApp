@@ -182,7 +182,7 @@
                     {% if logged_in_user.department == 'ADMINISTRATIVE' %}
                         <a href="/manage_shifts" class="btn btn-primary"><i class="fas fa-tasks me-2"></i>Manage Shifts</a>
                         <a href="/new/job" class="btn btn-success"><i class="fas fa-plus-circle me-2"></i>Add New IM #</a>
-                        <a href="/admin/create_office_job" class="btn btn-secondary"><i class="fas fa-building me-2"></i>Create Office Job</a>
+                        <a href="/admin/create_prefab_job" class="btn btn-secondary"><i class="fas fa-drafting-compass me-2"></i>Create Pre-FAB Job</a>
                         <a href="/manage_users" class="btn btn-warning"><i class="fas fa-users me-2"></i>Manage Users</a>
                         <a href="/batch_assign_shifts" class="btn btn-info text-white"><i class="fas fa-user-clock me-2"></i>Batch Assign Shifts</a>
                         <a href="/todays_activity" class="btn btn-primary"><i class="fas fa-chart-bar me-2"></i>Today's Activity</a>
@@ -260,7 +260,7 @@
                                                 <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
                                                 <div>
                                                     {% if logged_in_user.department == 'ADMINISTRATIVE' and not job.visible_to_production %}
-                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Office Only</span>
+                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Pre-FAB</span>
                                                     {% endif %}
                                                     <span class="badge badge-active">Active</span>
                                                 </div>
@@ -309,7 +309,7 @@
                                                 <h5 class="card-title fw-bold">IM #: {{ job.im_number }}</h5>
                                                 <div>
                                                     {% if logged_in_user.department == 'ADMINISTRATIVE' and not job.visible_to_production %}
-                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Office Only</span>
+                                                        <span class="badge bg-secondary me-1" title="Hidden from production workers">Pre-FAB</span>
                                                     {% endif %}
                                                     <span class="badge bg-danger">Inactive</span>
                                                 </div>

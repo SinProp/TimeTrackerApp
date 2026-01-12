@@ -198,3 +198,32 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
 )"
 [2026-01-09 12:02:04] git log -1 --oneline && git status
+[2026-01-11 15:09:50] mv /Users/titosmacbookair/Documents/Island-Time/flask_app/templates/create_office_job.html /Users/titosmacbookair/Documents/Island-Time/flask_app/templates/create_prefab_job.html
+[2026-01-11 15:35:55] git status
+[2026-01-11 15:36:01] git status
+[2026-01-11 15:36:11] git status
+[2026-01-11 15:36:16] git status
+[2026-01-11 15:36:21] git status
+[2026-01-11 15:36:26] git status
+[2026-01-11 15:36:31] git status
+[2026-01-11 15:36:36] git status
+[2026-01-11 15:36:41] git status
+[2026-01-11 15:36:46] git status
+[2026-01-11 15:36:55] pwd && git status
+[2026-01-11 15:37:00] pwd
+[2026-01-11 15:37:05] pwd
+[2026-01-11 15:37:10] ls
+[2026-01-11 15:37:15] echo "test"
+[2026-01-11 15:37:40] git status
+[2026-01-11 15:37:54] git status
+[2026-01-11 15:37:59] git status
+[2026-01-11 15:38:03] git status
+[2026-01-11 15:38:08] ls -la /Users/titosmacbookair/Documents/Island-Time
+[2026-01-11 15:38:13] git status
+[2026-01-11 15:38:19] git status
+[2026-01-11 15:38:36] git status
+[2026-01-11 15:38:46] git status
+[2026-01-11 15:38:51] git status
+[2026-01-11 15:38:57] git status
+[2026-01-11 15:39:03] git status
+[2026-01-11 15:39:08] git status

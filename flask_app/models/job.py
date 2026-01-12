@@ -188,8 +188,10 @@ class Job:
 
     @classmethod
     def add_new_record(cls, data):
-        # Set default value for estimated_hours if it's not present in data
-        data.setdefault("estimated_hours", "0000")
+        # Normalize estimated_hours to 4-digit format
+        data["estimated_hours"] = cls.normalize_estimated_hours(
+            data.get("estimated_hours", "")
+        )
         data.setdefault("user_id", "11")
 
         if not cls.check_im_number_exists({"im_number": data["im_number"]}):
@@ -210,22 +212,38 @@ class Job:
     @staticmethod
     def validate_job(job):
         is_valid = True
-        # if len(job['im_number']) < 4:
-        #     is_valid = False
-        #     flash("IM Numbers must be at least 4 digits","job")
         if len(job["general_contractor"]) < 3:
             is_valid = False
-            flash("general_contractor names must be at least 3 characters", "job")
-        # if len(band['founding_member']) < 3:
-        #     is_valid = False
-        #     flash("The name of the Founding Member must be at least 3 characters","band")
+            flash("General contractor name must be at least 3 characters", "job")
         if len(job["job_scope"]) < 5:
             is_valid = False
-            flash("The job's scope must be at least 5 characters", "job")
-        if len(job["estimated_hours"]) < 2:
-            is_valid = False
-            flash("The estimated hours must be at least be 2 digits long", "job")
+            flash("The job scope must be at least 5 characters", "job")
+        # Estimated hours validation is lenient - we'll normalize it later
         return is_valid
+
+    @staticmethod
+    def normalize_estimated_hours(value):
+        """
+        Normalize estimated hours to a 4-digit string format.
+        Handles various inputs: "40" -> "0040", "" -> "0000", "12.5" -> "0012", None -> "0000"
+        """
+        if not value:
+            return "0000"
+
+        # Extract only digits from the input
+        digits_only = "".join(c for c in str(value) if c.isdigit())
+
+        if not digits_only:
+            return "0000"
+
+        # Convert to integer and back to handle leading zeros
+        hours = int(digits_only)
+
+        # Cap at 9999 hours max
+        hours = min(hours, 9999)
+
+        # Format as 4-digit string with leading zeros
+        return f"{hours:04d}"
 
     # ============ Bulk Operations (Performance Optimization) ============
 
@@ -264,7 +282,7 @@ class Job:
         if not jobs_data:
             return 0
 
-        # Prepare values with defaults
+        # Prepare values with defaults and normalize estimated_hours
         values = []
         for job in jobs_data:
             values.append(
@@ -272,7 +290,7 @@ class Job:
                     job["im_number"],
                     job["general_contractor"],
                     job["job_scope"],
-                    job.get("estimated_hours", "0000"),
+                    cls.normalize_estimated_hours(job.get("estimated_hours", "")),
                     job.get("user_id", "11"),
                 )
             )
@@ -330,13 +348,13 @@ class Job:
         return list(job_dict.values())
 
     @classmethod
-    def save_office_job(cls, data):
+    def save_prefab_job(cls, data):
         """
-        Save a new office/pre-production job (hidden from production by default).
+        Save a new Pre-FAB job for estimating/pre-production (hidden from production by default).
         """
-        query = """INSERT INTO jobs 
-            (im_number, general_contractor, job_scope, estimated_hours, context, user_id, visible_to_production, source) 
-            VALUES (%(im_number)s, %(general_contractor)s, %(job_scope)s, %(estimated_hours)s, %(context)s, %(user_id)s, FALSE, 'office');"""
+        query = """INSERT INTO jobs
+            (im_number, general_contractor, job_scope, estimated_hours, context, user_id, visible_to_production, source)
+            VALUES (%(im_number)s, %(general_contractor)s, %(job_scope)s, %(estimated_hours)s, %(context)s, %(user_id)s, FALSE, 'prefab');"""
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
