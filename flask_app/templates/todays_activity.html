@@ -676,54 +676,26 @@
             }
             return '';        }
         
-        // ============ Missing Workers Dismissal Logic ============
-        
-        // Get today's date as a string for localStorage key
-        function getTodayKey() {
-            const today = new Date();
-            return `dismissed_workers_${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getDate().toString().padStart(2,'0')}`;
-        }
-        
-        // Get dismissed workers for today
-        function getDismissedWorkers() {
-            const key = getTodayKey();
-            const stored = localStorage.getItem(key);
-            return stored ? JSON.parse(stored) : [];
-        }
-        
-        // Save dismissed worker
-        function dismissWorker(workerId) {
-            const key = getTodayKey();
-            const dismissed = getDismissedWorkers();
-            if (!dismissed.includes(workerId)) {
-                dismissed.push(workerId);
-                localStorage.setItem(key, JSON.stringify(dismissed));
+        // ============ Missing Workers Dismissal Logic (Server-Side) ============
+
+        // Dismiss a worker via server API
+        async function dismissWorker(workerId) {
+            try {
+                const response = await fetch('/api/dismiss-worker', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: parseInt(workerId) })
+                });
+                const data = await response.json();
+                return data.success;
+            } catch (error) {
+                console.error('Error dismissing worker:', error);
+                return false;
             }
         }
-        
-        // Clear old dismissed workers (cleanup)
-        function clearOldDismissals() {
-            const todayKey = getTodayKey();
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('dismissed_workers_') && key !== todayKey) {
-                    localStorage.removeItem(key);
-                }
-            }
-        }
-        
-        // Hide already dismissed workers on page load
-        function hideDismissedWorkers() {
-            const dismissed = getDismissedWorkers();
-            dismissed.forEach(workerId => {
-                const badge = document.querySelector(`.missing-worker-badge[data-worker-id="${workerId}"]`);
-                if (badge) {
-                    badge.style.display = 'none';
-                }
-            });
-            updateMissingCount();
-        }
-        
+
         // Update the missing count badge
         function updateMissingCount() {
             const visibleBadges = document.querySelectorAll('.missing-worker-badge:not([style*="display: none"])');
@@ -731,35 +703,38 @@
             if (countBadge) {
                 countBadge.textContent = visibleBadges.length;
             }
-            
+
             // Hide the entire section if no missing workers
             const container = document.getElementById('missing-workers-container');
             if (container && visibleBadges.length === 0) {
                 container.closest('.card').style.display = 'none';
             }
         }
-        
+
         // Handle dismiss button clicks
         document.querySelectorAll('.dismiss-worker').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const workerId = this.dataset.workerId;
-                dismissWorker(workerId);
-
-                // Hide the chip with smooth animation
                 const chip = this.closest('.missing-worker-badge');
+
+                // Optimistically hide with animation
                 chip.classList.add('dismissing');
-                setTimeout(() => {
-                    chip.style.display = 'none';
-                    updateMissingCount();
-                }, 300);
+
+                // Call server API
+                const success = await dismissWorker(workerId);
+
+                if (success) {
+                    setTimeout(() => {
+                        chip.style.display = 'none';
+                        updateMissingCount();
+                    }, 300);
+                } else {
+                    // Revert animation if failed
+                    chip.classList.remove('dismissing');
+                    alert('Failed to dismiss worker. Please try again.');
+                }
             });
-        });
-        
-        // On page load
-        document.addEventListener('DOMContentLoaded', function() {
-            clearOldDismissals();
-            hideDismissedWorkers();
         });
     </script>
 </body>

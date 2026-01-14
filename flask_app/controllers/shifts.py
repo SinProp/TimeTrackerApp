@@ -1,4 +1,4 @@
-from flask import render_template, redirect, session, request, flash, url_for
+from flask import render_template, redirect, session, request, flash, url_for, jsonify
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
@@ -583,7 +583,9 @@ def todays_activity():
     ongoing_shifts = Shift.get_ongoing()
 
     # Get list of user IDs with ongoing shifts for missing workers calculation
-    ongoing_user_ids = [shift.creator.id for shift in ongoing_shifts] if ongoing_shifts else []
+    ongoing_user_ids = (
+        [shift.creator.id for shift in ongoing_shifts] if ongoing_shifts else []
+    )
 
     # Get missing workers (on roster but not clocked in)
     missing_workers = User.get_missing_workers_today(ongoing_user_ids)
@@ -808,3 +810,68 @@ def fix_negative_durations():
         flash("An error occurred while fixing shifts.", "danger")
 
     return redirect("/admin/stale_shifts")
+
+
+# ============ Worker Dismissal API ============
+
+
+@app.route("/api/dismiss-worker", methods=["POST"])
+def dismiss_worker():
+    """
+    API endpoint to dismiss a worker from the 'Yet to Clock In' list for today.
+    Stores dismissal server-side so it's visible to all users.
+    """
+    if "user_id" not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    if not data or "user_id" not in data:
+        return jsonify({"success": False, "error": "Missing user_id"}), 400
+
+    worker_id = data["user_id"]
+    dismissed_by = session["user_id"]
+
+    try:
+        User.dismiss_worker_today(worker_id, dismissed_by)
+        return jsonify({"success": True, "message": "Worker dismissed for today"})
+    except Exception as e:
+        print(f"Error dismissing worker {worker_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/undismiss-worker", methods=["POST"])
+def undismiss_worker():
+    """
+    API endpoint to restore a worker to the 'Yet to Clock In' list.
+    """
+    if "user_id" not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    if not data or "user_id" not in data:
+        return jsonify({"success": False, "error": "Missing user_id"}), 400
+
+    worker_id = data["user_id"]
+
+    try:
+        User.undismiss_worker_today(worker_id)
+        return jsonify({"success": True, "message": "Worker restored to list"})
+    except Exception as e:
+        print(f"Error undismissing worker {worker_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/dismissed-workers", methods=["GET"])
+def get_dismissed_workers():
+    """
+    API endpoint to get list of dismissed worker IDs for today.
+    """
+    if "user_id" not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    try:
+        dismissed_ids = User.get_dismissed_worker_ids_today()
+        return jsonify({"success": True, "dismissed_ids": dismissed_ids})
+    except Exception as e:
+        print(f"Error getting dismissed workers: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

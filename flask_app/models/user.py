@@ -178,21 +178,28 @@ class User:
         return connectToMySQL(cls.db).query_db(query, data)
 
     @classmethod
-    def get_missing_workers_today(cls, ongoing_user_ids):
+    def get_missing_workers_today(cls, ongoing_user_ids, include_dismissed=False):
         """
         Get users on active roster who haven't clocked in today.
         Args:
             ongoing_user_ids: list of user IDs with ongoing shifts
+            include_dismissed: if False, also exclude dismissed workers
         Returns:
             List of User objects for workers expected but not signed in
         """
+        # Get dismissed worker IDs for today
+        dismissed_ids = (
+            [] if include_dismissed else cls.get_dismissed_worker_ids_today()
+        )
+
         query = "SELECT * FROM users WHERE deleted_date IS NULL AND on_active_roster = TRUE;"
         results = connectToMySQL(cls.db).query_db(query)
         missing_workers = []
         if not results:
             return missing_workers
         for row in results:
-            if row["id"] not in ongoing_user_ids:
+            # Exclude workers who are clocked in or dismissed
+            if row["id"] not in ongoing_user_ids and row["id"] not in dismissed_ids:
                 user_data = {
                     "id": row["id"],
                     "first_name": row["first_name"],
@@ -216,3 +223,51 @@ class User:
         """
         query = "UPDATE users SET on_active_roster = %(on_roster)s WHERE id = %(id)s;"
         return connectToMySQL(cls.db).query_db(query, data)
+
+    @classmethod
+    def dismiss_worker_today(cls, user_id, dismissed_by=None):
+        """
+        Dismiss a worker from the 'Yet to Clock In' list for today.
+        Uses INSERT IGNORE to handle duplicates gracefully.
+        """
+        query = """
+            INSERT IGNORE INTO dismissed_workers (user_id, dismissed_date, dismissed_by)
+            VALUES (%(user_id)s, CURDATE(), %(dismissed_by)s);
+        """
+        data = {"user_id": user_id, "dismissed_by": dismissed_by}
+        return connectToMySQL(cls.db).query_db(query, data)
+
+    @classmethod
+    def undismiss_worker_today(cls, user_id):
+        """
+        Remove a worker from today's dismissed list.
+        """
+        query = """
+            DELETE FROM dismissed_workers
+            WHERE user_id = %(user_id)s AND dismissed_date = CURDATE();
+        """
+        return connectToMySQL(cls.db).query_db(query, {"user_id": user_id})
+
+    @classmethod
+    def get_dismissed_worker_ids_today(cls):
+        """
+        Get list of user IDs dismissed for today.
+        """
+        query = (
+            "SELECT user_id FROM dismissed_workers WHERE dismissed_date = CURDATE();"
+        )
+        results = connectToMySQL(cls.db).query_db(query)
+        if not results:
+            return []
+        return [row["user_id"] for row in results]
+
+    @classmethod
+    def clear_old_dismissals(cls, days_to_keep=7):
+        """
+        Clean up old dismissal records (optional maintenance).
+        """
+        query = """
+            DELETE FROM dismissed_workers
+            WHERE dismissed_date < DATE_SUB(CURDATE(), INTERVAL %(days)s DAY);
+        """
+        return connectToMySQL(cls.db).query_db(query, {"days": days_to_keep})
