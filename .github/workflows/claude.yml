@@ -11,15 +11,15 @@ permissions:
     pull-requests: write
     contents: read
     issues: write
+    id-token: write
 
 jobs:
     review:
         runs-on: ubuntu-latest
-        # Only run on @claude mentions for comments, always run for PR events
         if: |
             github.event_name == 'pull_request' ||
-            (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-            (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+            contains(github.event.comment.body, '@claude') ||
+            contains(github.event.comment.body, '/review')
         steps:
             - uses: anthropics/claude-code-action@v1
               with:
