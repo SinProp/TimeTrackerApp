@@ -194,7 +194,7 @@ class Shift:
 
     @classmethod
     def update(cls, data):
-        query = "UPDATE shifts SET updated_at = NOW() WHERE id = %(id)s;"
+        query = "UPDATE shifts SET updated_at = NOW() WHERE id = %(id)s AND updated_at IS NULL;"
         return connectToMySQL(cls.db_name).query_db(query, data)
 
     @classmethod
@@ -352,6 +352,36 @@ class Shift:
         return len(shifts_data) if result is not False else 0
 
     # ============ Auto-End Shifts at 3:30 PM ============
+
+    @classmethod
+    def auto_clock_out_open_shifts_created_today(cls):
+        """
+        End all open shifts created today by setting updated_at to NOW().
+
+        Used by weekday 6:00 PM automation. Safe/idempotent because it only
+        affects rows where updated_at IS NULL.
+
+        Returns:
+            Number of shifts clocked out.
+        """
+        count_query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NULL
+            AND DATE(created_at) = CURDATE();
+        """
+        count_result = connectToMySQL(cls.db_name).query_db(count_query)
+        count = count_result[0]["count"] if count_result else 0
+
+        if count > 0:
+            query = """
+                UPDATE shifts
+                SET updated_at = NOW()
+                WHERE updated_at IS NULL
+                AND DATE(created_at) = CURDATE();
+            """
+            connectToMySQL(cls.db_name).query_db(query)
+
+        return count
 
     @classmethod
     def auto_end_open_shifts_at_330pm(cls):
@@ -544,6 +574,59 @@ class Shift:
             )
 
         return count
+
+    @classmethod
+    def count_stale_shifts(cls, hours_threshold=12):
+        """
+        Count open stale shifts older than the configured threshold.
+        """
+        count_query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NULL
+            AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
+        """
+        count_result = connectToMySQL(cls.db_name).query_db(
+            count_query, {"hours_threshold": hours_threshold}
+        )
+        return count_result[0]["count"] if count_result else 0
+
+    @classmethod
+    def fix_stale_shifts_batch(cls, batch_size=10, hours_threshold=12):
+        """
+        Fix stale shifts in controlled batches, oldest first.
+
+        Args:
+            batch_size: Max number of stale shifts to fix in this run
+            hours_threshold: Number of hours after which an open shift is stale
+
+        Returns:
+            Number of shifts fixed
+        """
+        batch_size = int(batch_size)
+        if batch_size <= 0:
+            return 0
+
+        stale_count = cls.count_stale_shifts(hours_threshold=hours_threshold)
+        target_count = min(batch_size, stale_count)
+
+        if target_count > 0:
+            query = f"""
+                UPDATE shifts
+                SET updated_at = CASE
+                    WHEN TIME(created_at) < '15:30:00'
+                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                    ELSE created_at
+                END
+                WHERE updated_at IS NULL
+                AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s
+                ORDER BY created_at ASC
+                LIMIT {target_count};
+            """
+            connectToMySQL(cls.db_name).query_db(
+                query, {"hours_threshold": hours_threshold}
+            )
+
+        return target_count
 
     @classmethod
     def fix_negative_duration_shifts(cls):

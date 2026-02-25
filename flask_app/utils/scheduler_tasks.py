@@ -8,22 +8,25 @@ logging.basicConfig(level=logging.INFO)
 scheduler_logger = logging.getLogger("scheduler")
 
 
-def auto_end_shifts_at_330pm():
+def auto_clock_out_shifts_at_6pm_weekdays():
     """
-    Automatically end all open shifts at 3:30 PM EST.
-    Sets updated_at to 3:30 PM on the same day the shift was created.
-    Runs daily at 3:30 PM EST.
+    Automatically clock out open shifts at 6:00 PM EST on weekdays.
+    Only affects open shifts created today.
     """
     try:
-        scheduler_logger.info(f"Starting auto-end shifts at {datetime.now()}")
+        scheduler_logger.info(
+            f"Starting weekday 6:00 PM auto clock-out at {datetime.now()}"
+        )
 
-        result = Shift.auto_end_open_shifts_at_330pm()
+        closed_count = Shift.auto_clock_out_open_shifts_created_today()
 
-        scheduler_logger.info(f"Auto-end shifts completed: {result}")
-        return result
+        scheduler_logger.info(
+            f"Weekday 6:00 PM auto clock-out completed. Closed {closed_count} shifts."
+        )
+        return f"Closed {closed_count} open shifts at 6:00 PM"
 
     except Exception as e:
-        scheduler_logger.error(f"Error in auto-end shifts: {str(e)}")
+        scheduler_logger.error(f"Error in weekday 6:00 PM auto clock-out: {str(e)}")
         return f"Error: {str(e)}"
 
 
