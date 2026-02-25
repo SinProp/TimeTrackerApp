@@ -149,30 +149,30 @@ jobs:
             Y_AXIS='0'
           fi
 
-          NEW_BODY=$(cat <<EOF
-## Rolling Scheduler Verification
+          BODY_FILE="$RUNNER_TEMP/scheduler_verification_issue_body.md"
+          {
+            echo "## Rolling Scheduler Verification"
+            echo
+            echo "Single-issue weekday verification log for production scheduler health and 6 PM clock-out behavior."
+            echo
+            echo "### Trend (Pass=1, Fail=0)"
+            echo
+            echo '```mermaid'
+            echo 'xychart-beta'
+            echo '  title "Scheduler Verification (Last 14 Weekdays)"'
+            echo "  x-axis [$X_AXIS]"
+            echo '  y-axis "Verdict" 0 --> 1'
+            echo "  bar [$Y_AXIS]"
+            echo '```'
+            echo
+            echo "$START"
+            printf "%s\n" "$HISTORY_TRIMMED"
+            echo "$END"
+            echo
+            echo "_Updated by workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID_"
+          } > "$BODY_FILE"
 
-Single-issue weekday verification log for production scheduler health and 6 PM clock-out behavior.
-
-### Trend (Pass=1, Fail=0)
-
-\`\`\`mermaid
-xychart-beta
-  title "Scheduler Verification (Last 14 Weekdays)"
-  x-axis [$X_AXIS]
-  y-axis "Verdict" 0 --> 1
-  bar [$Y_AXIS]
-\`\`\`
-
-$START
-$HISTORY_TRIMMED
-$END
-
-_Updated by workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID_
-EOF
-)
-
-          gh issue edit "$ISSUE_NUM" -R "$REPO" --body "$NEW_BODY"
+          gh issue edit "$ISSUE_NUM" -R "$REPO" --body-file "$BODY_FILE"
 
       - name: Fail workflow on failed verification
         if: ${{ steps.verify.outputs.VERDICT == 'FAIL' }}
