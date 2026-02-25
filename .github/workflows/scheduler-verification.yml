@@ -1,0 +1,181 @@
+name: Scheduler Verification (Rolling)
+
+on:
+  schedule:
+    - cron: "15 23 * * 1-5" # Weekdays; 23:15 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verify-and-update-issue:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH key
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf "%s\n" "$EC2_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Run production verification
+        id: verify
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          set -euo pipefail
+
+          REMOTE_OUTPUT=$(ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 "$EC2_USER@$EC2_HOST" '
+            set -e
+            cd ~/TimeTrackerApp
+
+            set -a
+            source .env
+            set +a
+
+            OPEN_COUNT=$(MYSQL_PWD="$MYSQL_PASSWORD" mysql -h"${MYSQL_HOST:-localhost}" -u"${MYSQL_USER:-root}" -D man_hours -N -e "SELECT COUNT(*) FROM shifts WHERE updated_at IS NULL AND DATE(created_at)=CURDATE();")
+
+            LOCK_OK="NO"
+            if [ -f /tmp/island_time_scheduler.lock ] && lsof /tmp/island_time_scheduler.lock 2>/dev/null | grep -q gunicorn; then
+              LOCK_OK="YES"
+            fi
+
+            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --unix-socket /home/ubuntu/TimeTrackerApp/Island_Time.sock http://localhost/ || echo "000")
+
+            TODAY=$(TZ=America/New_York date +%Y-%m-%d)
+            if grep -q "$TODAY" gunicorn_error.log && grep -q "Weekday 6:00 PM auto clock-out completed" gunicorn_error.log; then
+              FIRED="YES"
+            else
+              FIRED="NO"
+            fi
+
+            HOUR_ET=$(TZ=America/New_York date +%H)
+            MIN_ET=$(TZ=America/New_York date +%M)
+            DOW_ET=$(TZ=America/New_York date +%u)
+            ET_NOW=$(TZ=America/New_York date +"%Y-%m-%d %H:%M:%S %Z")
+
+            VERDICT="PASS"
+            REASON="All checks healthy"
+
+            if [ "$LOCK_OK" != "YES" ]; then
+              VERDICT="FAIL"
+              REASON="Scheduler lock missing or not held by gunicorn"
+            elif [ "$HEALTH" != "200" ]; then
+              VERDICT="FAIL"
+              REASON="App health check not 200"
+            elif [ "$DOW_ET" -ge 1 ] && [ "$DOW_ET" -le 5 ] && { [ "$HOUR_ET" -gt 18 ] || { [ "$HOUR_ET" -eq 18 ] && [ "$MIN_ET" -ge 10 ]; }; }; then
+              if [ "$OPEN_COUNT" != "0" ]; then
+                VERDICT="FAIL"
+                REASON="Open shifts still present after 6 PM ET"
+              fi
+            else
+              REASON="Pre-6PM ET window; structural checks only"
+            fi
+
+            echo "OPEN_COUNT=$OPEN_COUNT"
+            echo "LOCK_OK=$LOCK_OK"
+            echo "HEALTH=$HEALTH"
+            echo "FIRED=$FIRED"
+            echo "VERDICT=$VERDICT"
+            echo "REASON=$REASON"
+            echo "ET_NOW=$ET_NOW"
+          ')
+
+          echo "$REMOTE_OUTPUT"
+
+          while IFS='=' read -r k v; do
+            case "$k" in
+              OPEN_COUNT|LOCK_OK|HEALTH|FIRED|VERDICT|REASON|ET_NOW)
+                echo "$k=$v" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          done <<< "$REMOTE_OUTPUT"
+
+      - name: Upsert rolling issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ET_NOW: ${{ steps.verify.outputs.ET_NOW }}
+          OPEN_COUNT: ${{ steps.verify.outputs.OPEN_COUNT }}
+          LOCK_OK: ${{ steps.verify.outputs.LOCK_OK }}
+          HEALTH: ${{ steps.verify.outputs.HEALTH }}
+          FIRED: ${{ steps.verify.outputs.FIRED }}
+          VERDICT: ${{ steps.verify.outputs.VERDICT }}
+          REASON: ${{ steps.verify.outputs.REASON }}
+        run: |
+          set -euo pipefail
+
+          TITLE="Scheduler Verification (Rolling)"
+          ISSUE_NUM=$(gh issue list -R "$REPO" --state open --search "in:title $TITLE" --json number,title --jq '.[] | select(.title=="'"$TITLE"'") | .number' | head -n1)
+
+          if [ -z "${ISSUE_NUM:-}" ]; then
+            ISSUE_NUM=$(gh issue create -R "$REPO" --title "$TITLE" --body "Initializing rolling verification issue..." --label "operations" --json number --jq '.number')
+          fi
+
+          BODY=$(gh issue view "$ISSUE_NUM" -R "$REPO" --json body --jq '.body')
+
+          START="<!-- SCHEDULER_HISTORY_START -->"
+          END="<!-- SCHEDULER_HISTORY_END -->"
+
+          if ! printf '%s' "$BODY" | grep -q "$START"; then
+            HISTORY='| ET Timestamp | Fired | Open Today | Lock | Health | Verdict | Reason |\n|---|---|---:|---|---|---|---|'
+          else
+            HISTORY=$(printf '%s' "$BODY" | awk "/$START/{flag=1;next}/$END/{flag=0}flag")
+          fi
+
+          NEW_ROW="| $ET_NOW | $FIRED | $OPEN_COUNT | $LOCK_OK | $HEALTH | $VERDICT | $REASON |"
+
+          HISTORY_WITH_NEW=$(printf "%s\n%s\n" "$HISTORY" "$NEW_ROW")
+          HISTORY_TRIMMED=$(printf "%s\n" "$HISTORY_WITH_NEW" | tail -n 32)
+
+          DATA_ROWS=$(printf "%s\n" "$HISTORY_TRIMMED" | tail -n +3)
+          X_AXIS=$(printf "%s\n" "$DATA_ROWS" | awk -F'|' '{gsub(/^ +| +$/,"",$2); split($2,a," "); print a[1]" "a[2]}' | sed '/^$/d' | tail -n 14 | sed 's/.*/"&"/' | paste -sd, -)
+          Y_AXIS=$(printf "%s\n" "$DATA_ROWS" | awk -F'|' '{gsub(/^ +| +$/,"",$7); if ($7=="PASS") print 1; else if ($7=="FAIL") print 0;}' | tail -n 14 | paste -sd, -)
+
+          if [ -z "$X_AXIS" ]; then
+            X_AXIS='"no-data"'
+          fi
+          if [ -z "$Y_AXIS" ]; then
+            Y_AXIS='0'
+          fi
+
+          NEW_BODY=$(cat <<EOF
+## Rolling Scheduler Verification
+
+Single-issue weekday verification log for production scheduler health and 6 PM clock-out behavior.
+
+### Trend (Pass=1, Fail=0)
+
+\`\`\`mermaid
+xychart-beta
+  title "Scheduler Verification (Last 14 Weekdays)"
+  x-axis [$X_AXIS]
+  y-axis "Verdict" 0 --> 1
+  bar [$Y_AXIS]
+\`\`\`
+
+$START
+$HISTORY_TRIMMED
+$END
+
+_Updated by workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID_
+EOF
+)
+
+          gh issue edit "$ISSUE_NUM" -R "$REPO" --body "$NEW_BODY"
+
+      - name: Fail workflow on failed verification
+        if: ${{ steps.verify.outputs.VERDICT == 'FAIL' }}
+        run: |
+          echo "Verification failed: ${{ steps.verify.outputs.REASON }}"
+          exit 1
