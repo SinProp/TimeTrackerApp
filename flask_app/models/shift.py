@@ -348,7 +348,8 @@ class Shift:
         # Flatten the values list for the query
         flat_values = [item for sublist in values for item in sublist]
 
-        result = connectToMySQL(cls.db_name).query_db(query, tuple(flat_values))
+        result = connectToMySQL(cls.db_name).query_db(
+            query, tuple(flat_values))
         return len(shifts_data) if result is not False else 0
 
     # ============ Auto-End Shifts at 3:30 PM ============
@@ -356,10 +357,16 @@ class Shift:
     @classmethod
     def auto_clock_out_open_shifts_created_today(cls):
         """
-        End all open shifts created today by setting updated_at to NOW().
+        End all open shifts created today using a 3:30 PM baseline.
 
-        Used by weekday 6:00 PM automation. Safe/idempotent because it only
-        affects rows where updated_at IS NULL.
+        Used by weekday 6:00 PM automation. At 6:00 PM, open shifts are closed as:
+        - If shift started before 3:30 PM: set updated_at to 3:30 PM same date
+        - If shift started at/after 3:30 PM: set updated_at to created_at
+
+        This avoids negative durations while preserving the business rule that
+        missing clock-outs map to 3:30 PM baseline when possible.
+
+        Safe/idempotent because it only affects rows where updated_at IS NULL.
 
         Returns:
             Number of shifts clocked out.
@@ -375,7 +382,11 @@ class Shift:
         if count > 0:
             query = """
                 UPDATE shifts
-                SET updated_at = NOW()
+                SET updated_at = CASE
+                    WHEN TIME(created_at) < '15:30:00'
+                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                    ELSE created_at
+                END
                 WHERE updated_at IS NULL
                 AND DATE(created_at) = CURDATE();
             """
@@ -527,7 +538,8 @@ class Shift:
             END
             WHERE id = %(shift_id)s AND updated_at IS NULL;
         """
-        result = connectToMySQL(cls.db_name).query_db(query, {"shift_id": shift_id})
+        result = connectToMySQL(cls.db_name).query_db(
+            query, {"shift_id": shift_id})
         return result is not False
 
     @classmethod
