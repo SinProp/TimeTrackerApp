@@ -1,11 +1,19 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 from flask import flash
 from ..models import user, job
+from collections import defaultdict
 
 
 from datetime import datetime, timedelta
 
 dateFormat = "%m/%d/%Y %I:%M %p"
+
+
+def format_seconds_as_hms(total_seconds):
+    """Convert a number of seconds to HH:MM:SS string."""
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
 class Shift:
@@ -51,15 +59,25 @@ class Shift:
         return all_shifts
 
     @classmethod
-    def find_shifts_in_date_range(cls, data):
+    def find_shifts_in_date_range(cls, data, employee_id=None):
+        """
+        Find completed shifts in a date range. Filters on updated_at (punch-out time).
+        NOTE: This reports shifts by when they ENDED, not when they started.
+        For same-day construction shifts this is equivalent; cross-day shifts
+        are attributed to the day/quarter they ended.
+
+        Args:
+            data: dict with start_date, end_date (YYYY-MM-DD strings)
+            employee_id: optional — filter to a single employee's shifts
+        """
         # Ensure start_date and end_date cover the entire day
         start_date_str = data["start_date"] + " 00:00:00"
         end_date_str = data["end_date"] + " 23:59:59"
 
         query = """
-            SELECT 
-                shifts.*, 
-                users.id as creator_id, users.first_name, users.last_name, users.email, users.password as creator_password, 
+            SELECT
+                shifts.*,
+                users.id as creator_id, users.first_name, users.last_name, users.email, users.password as creator_password,
                 users.department, users.created_at as creator_created_at, users.updated_at as creator_updated_at,
                 jobs.id as job_id_alias, jobs.im_number, jobs.general_contractor, jobs.job_scope, jobs.estimated_hours,
                 jobs.user_id as job_user_id, jobs.context, jobs.created_at as job_created_at, jobs.updated_at as job_updated_at,
@@ -69,10 +87,15 @@ class Shift:
             JOIN users ON shifts.user_id = users.id
             LEFT JOIN jobs ON shifts.job_id = jobs.id
             WHERE shifts.updated_at BETWEEN %(start_date)s AND %(end_date)s
-            AND shifts.updated_at IS NOT NULL;
-        """
+            AND shifts.updated_at IS NOT NULL"""
 
         query_data = {"start_date": start_date_str, "end_date": end_date_str}
+
+        if employee_id:
+            query += "\n            AND shifts.user_id = %(employee_id)s"
+            query_data["employee_id"] = employee_id
+
+        query += ";"
 
         results = connectToMySQL(cls.db_name).query_db(query, query_data)
 
@@ -115,6 +138,99 @@ class Shift:
             shifts.append(this_shift)
 
         return shifts
+
+    # ============ Quarterly Report Aggregation ============
+    #
+    #  shifts[] ──▶ group_shifts_by_employee() ──▶ { user_id: { user, shifts, total } }
+    #                       │
+    #                       ▼
+    #             group_by_department() ──▶ { dept: [ employee_data ] }
+    #
+
+    @staticmethod
+    def group_shifts_by_employee(shifts):
+        """
+        Group a flat list of shifts by employee, calculating per-employee totals.
+
+        Args:
+            shifts: list of Shift objects (from find_shifts_in_date_range)
+
+        Returns:
+            List of dicts sorted by total_hours descending:
+            [{ 'user': User, 'shifts': [Shift], 'total_seconds': float,
+               'total_hours_formatted': str, 'shift_count': int }]
+        """
+        grouped = defaultdict(
+            lambda: {
+                "user": None,
+                "shift_count": 0,
+                "total_seconds": 0,
+            }
+        )
+
+        for shift in shifts:
+            if not shift.creator:
+                continue  # skip orphaned shifts (user deleted or LEFT JOIN miss)
+            uid = shift.creator.id
+            if grouped[uid]["user"] is None:
+                grouped[uid]["user"] = shift.creator
+            grouped[uid]["shift_count"] += 1
+            if shift.elapsed_time:
+                try:
+                    grouped[uid]["total_seconds"] += shift.elapsed_time.total_seconds()
+                except AttributeError:
+                    parts = str(shift.elapsed_time).split(":")
+                    if len(parts) == 3:
+                        h, m, s = int(parts[0]), int(parts[1]), int(float(parts[2]))
+                        grouped[uid]["total_seconds"] += h * 3600 + m * 60 + s
+
+        result = []
+        for uid, data in grouped.items():
+            data["total_hours_formatted"] = format_seconds_as_hms(data["total_seconds"])
+            result.append(data)
+
+        # Default sort: total hours descending
+        result.sort(key=lambda x: x["total_seconds"], reverse=True)
+        return result
+
+    @staticmethod
+    def group_by_department(employee_data_list):
+        """
+        Group per-employee data by department with subtotals.
+
+        Args:
+            employee_data_list: list from group_shifts_by_employee()
+
+        Returns:
+            List of dicts, each representing a department:
+            [{ 'department': str, 'employees': [...], 'total_seconds': float,
+               'total_hours_formatted': str, 'shift_count': int }]
+        """
+        dept_map = defaultdict(
+            lambda: {
+                "employees": [],
+                "total_seconds": 0,
+                "shift_count": 0,
+            }
+        )
+
+        for emp in employee_data_list:
+            dept = emp["user"].department or "UNKNOWN"
+            dept_map[dept]["employees"].append(emp)
+            dept_map[dept]["total_seconds"] += emp["total_seconds"]
+            dept_map[dept]["shift_count"] += emp["shift_count"]
+
+        result = []
+        for dept_name, data in dept_map.items():
+            data["department"] = dept_name
+            data["total_hours_formatted"] = format_seconds_as_hms(data["total_seconds"])
+            # Ensure employees sorted by hours descending within each department
+            data["employees"].sort(key=lambda x: x["total_seconds"], reverse=True)
+            result.append(data)
+
+        # Sort departments alphabetically
+        result.sort(key=lambda x: x["department"])
+        return result
 
     @classmethod
     def get_one_shift(cls, data):
@@ -348,8 +464,7 @@ class Shift:
         # Flatten the values list for the query
         flat_values = [item for sublist in values for item in sublist]
 
-        result = connectToMySQL(cls.db_name).query_db(
-            query, tuple(flat_values))
+        result = connectToMySQL(cls.db_name).query_db(query, tuple(flat_values))
         return len(shifts_data) if result is not False else 0
 
     # ============ Auto-End Shifts at 3:30 PM ============
@@ -538,8 +653,7 @@ class Shift:
             END
             WHERE id = %(shift_id)s AND updated_at IS NULL;
         """
-        result = connectToMySQL(cls.db_name).query_db(
-            query, {"shift_id": shift_id})
+        result = connectToMySQL(cls.db_name).query_db(query, {"shift_id": shift_id})
         return result is not False
 
     @classmethod
@@ -632,7 +746,7 @@ class Shift:
                 WHERE updated_at IS NULL
                 AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s
                 ORDER BY created_at ASC
-                LIMIT {target_count};
+                LIMIT {int(target_count)};  -- int() cast guards copy-paste reuse
             """
             connectToMySQL(cls.db_name).query_db(
                 query, {"hours_threshold": hours_threshold}

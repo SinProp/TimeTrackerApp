@@ -1,11 +1,87 @@
-from flask import render_template, redirect, session, request, flash, url_for, jsonify
+from flask import (
+    render_template,
+    redirect,
+    session,
+    request,
+    flash,
+    url_for,
+    jsonify,
+    Response,
+)
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
-from flask_app.models.shift import Shift
+from flask_app.models.shift import Shift, format_seconds_as_hms
 from datetime import datetime, timedelta, timezone
+import csv
+import io
 
 dateFormat = "%m/%d/%Y %I:%M %p"
+
+
+def normalize_employee_id(val):
+    """Normalize employee_id from request: return int or None."""
+    if val in (None, "", "all"):
+        return None
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_date_range(req):
+    """
+    Extract and validate start_date/end_date from a Flask request (GET or POST).
+
+    Returns:
+        (start_date, end_date) as date objects on success
+        (None, None) and flashes error on failure
+    """
+    if req.method == "POST":
+        start_str = req.form.get("start_date")
+        end_str = req.form.get("end_date")
+    else:
+        start_str = req.args.get("start_date")
+        end_str = req.args.get("end_date")
+
+    if not start_str or not end_str:
+        return None, None
+
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+    except ValueError:
+        flash("Invalid date format. Please use YYYY-MM-DD.", "danger")
+        return None, None
+
+    if end_date < start_date:
+        flash("End date must be after start date.", "danger")
+        return None, None
+
+    return start_date, end_date
+
+
+def get_quarter_dates(quarter, year=None):
+    """
+    Get start and end dates for a calendar year quarter.
+
+    Args:
+        quarter: 1-4
+        year: defaults to current year
+
+    Returns:
+        (start_date, end_date) as date objects
+    """
+    if year is None:
+        year = datetime.now().year
+
+    quarters = {
+        1: (datetime(year, 1, 1).date(), datetime(year, 3, 31).date()),
+        2: (datetime(year, 4, 1).date(), datetime(year, 6, 30).date()),
+        3: (datetime(year, 7, 1).date(), datetime(year, 9, 30).date()),
+        4: (datetime(year, 10, 1).date(), datetime(year, 12, 31).date()),
+    }
+    return quarters.get(quarter, (None, None))
 
 
 @app.route("/add/shift/<int:id>")
@@ -97,61 +173,64 @@ def create_shift():
     return redirect(f"/show/job/{job_id}")
 
 
-def render_shift_report(start_date, end_date):
+def render_shift_report(start_date, end_date, employee_id=None):
     user_data = {"id": session["user_id"]}
     data = {
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
     }
 
-    shifts = Shift.find_shifts_in_date_range(data)
-    all_jobs = Job.get_all_jobs()  # Pass all jobs for IM number dropdown
+    shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
+    all_jobs = Job.get_all_jobs()
 
     total_elapsed_time = timedelta()
     for shift in shifts:
         if shift.elapsed_time:
             total_elapsed_time += shift.elapsed_time
 
-    hours, remainder = divmod(total_elapsed_time.total_seconds(), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    total_elapsed_time_hms = "{:02}:{:02}:{:02}".format(
-        int(hours), int(minutes), int(seconds)
-    )
+    total_elapsed_time_hms = format_seconds_as_hms(total_elapsed_time.total_seconds())
 
-    formatted_elapsed_time = total_elapsed_time_hms
+    # Build back-link to quarterly report if coming from drill-down
+    back_to_quarterly = None
+    if employee_id:
+        back_to_quarterly = url_for(
+            "quarterly_report",
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+        )
 
     return render_template(
         "shift_report.html",
         shifts=shifts,
         user=User.get_by_id(user_data),
         total_elapsed_time_hms=total_elapsed_time_hms,
-        formatted_elapsed_time=formatted_elapsed_time,
         start_date=data["start_date"],
         end_date=data["end_date"],
         all_jobs=all_jobs,
-    )  # Pass all_jobs to template
+        employee_id=employee_id,
+        back_to_quarterly=back_to_quarterly,
+    )
 
 
 @app.route("/shift_report", methods=["GET", "POST"])
 def shift_report():
+    if "user_id" not in session:
+        return redirect("/logout")
+
     user_data = {"id": session["user_id"]}
     logged_in_user = User.get_by_id(user_data)
 
-    if request.method == "POST":
-        start_date_str = request.form.get("start_date")
-        end_date_str = request.form.get("end_date")
-    else:  # GET request
-        start_date_str = request.args.get("start_date")
-        end_date_str = request.args.get("end_date")
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
 
-    if start_date_str and end_date_str:
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            return render_shift_report(start_date, end_date)
-        except ValueError:
-            flash("Invalid date format.", "danger")
-            return render_template("shift_report.html", user=logged_in_user)
+    start_date, end_date = parse_date_range(request)
+    employee_id = normalize_employee_id(
+        request.args.get("employee_id") or request.form.get("employee_id")
+    )
+
+    if start_date and end_date:
+        return render_shift_report(start_date, end_date, employee_id=employee_id)
     else:
         return render_template("shift_report.html", user=logged_in_user)
 
@@ -160,6 +239,11 @@ def shift_report():
 def shift_report_last_week():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=7)
     return render_shift_report(start_date, end_date)
@@ -169,6 +253,11 @@ def shift_report_last_week():
 def shift_report_last_two_weeks():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=14)
     return render_shift_report(start_date, end_date)
@@ -178,6 +267,11 @@ def shift_report_last_two_weeks():
 def shift_report_last_month():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     today = datetime.utcnow().date()
     first_day_current = today.replace(day=1)
     end_date = first_day_current - timedelta(days=1)
@@ -189,10 +283,175 @@ def shift_report_last_month():
 def shift_report_current_month():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     today = datetime.utcnow().date()
     start_date = today.replace(day=1)
     end_date = today
     return render_shift_report(start_date, end_date)
+
+
+# ============ Quarterly Report ============
+#
+#  /quarterly_report (GET/POST) ── admin only
+#      │
+#      ├─ Quarter preset (Q1-Q4) OR custom date range
+#      ├─ Optional employee_id filter
+#      ├─ Query: find_shifts_in_date_range → group_by_employee → group_by_department
+#      │
+#      ▼
+#  quarterly_report.html ──[View →]──▶ /shift_report?employee_id=X
+#  /quarterly_report/csv ──▶ CSV download
+
+
+@app.route("/quarterly_report", methods=["GET", "POST"])
+def quarterly_report():
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    all_users = User.get_all()
+    current_year = datetime.now().year
+
+    start_date, end_date = parse_date_range(request)
+    employee_id = normalize_employee_id(
+        request.args.get("employee_id") or request.form.get("employee_id")
+    )
+
+    if start_date and end_date:
+        data = {
+            "start_date": start_date.strftime("%Y-%m-%d"),
+            "end_date": end_date.strftime("%Y-%m-%d"),
+        }
+
+        shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
+        employee_data = Shift.group_shifts_by_employee(shifts)
+        department_data = Shift.group_by_department(employee_data)
+
+        # Calculate grand totals
+        total_seconds = sum(e["total_seconds"] for e in employee_data)
+        total_shifts = sum(e["shift_count"] for e in employee_data)
+        total_hours_formatted = format_seconds_as_hms(total_seconds)
+
+        # Get filtered employee name for header
+        filtered_employee_name = None
+        if employee_id and employee_data:
+            filtered_employee_name = f"{employee_data[0]['user'].first_name} {employee_data[0]['user'].last_name}"
+
+        return render_template(
+            "quarterly_report.html",
+            user=logged_in_user,
+            department_data=department_data,
+            total_hours=total_hours_formatted,
+            total_shifts=total_shifts,
+            total_employees=len(employee_data),
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+            all_users=all_users,
+            current_year=current_year,
+            employee_id=employee_id,
+            filtered_employee_name=filtered_employee_name,
+        )
+
+    return render_template(
+        "quarterly_report.html",
+        user=logged_in_user,
+        all_users=all_users,
+        current_year=current_year,
+    )
+
+
+@app.route("/quarterly_report/q/<int:quarter>")
+def quarterly_report_preset(quarter):
+    if "user_id" not in session:
+        return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+    if quarter < 1 or quarter > 4:
+        flash("Invalid quarter.", "danger")
+        return redirect("/quarterly_report")
+    start_date, end_date = get_quarter_dates(quarter)
+    return redirect(
+        url_for(
+            "quarterly_report",
+            start_date=start_date.strftime("%Y-%m-%d"),
+            end_date=end_date.strftime("%Y-%m-%d"),
+        )
+    )
+
+
+@app.route("/quarterly_report/csv")
+def quarterly_report_csv():
+    """Download quarterly report as CSV (utf-8-sig BOM for Excel compatibility)."""
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    start_date, end_date = parse_date_range(request)
+    employee_id = normalize_employee_id(request.args.get("employee_id"))
+
+    if not start_date or not end_date:
+        flash("Date range required for CSV export.", "danger")
+        return redirect("/quarterly_report")
+
+    data = {
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": end_date.strftime("%Y-%m-%d"),
+    }
+    shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
+    employee_data = Shift.group_shifts_by_employee(shifts)
+
+    # Sanitize cell values to prevent CSV/Excel formula injection.
+    # Values starting with =, +, -, @ are interpreted as formulas by Excel.
+    def sanitize_csv_cell(val):
+        s = str(val)
+        if s and s[0] in ("=", "+", "-", "@"):
+            return "'" + s
+        return s
+
+    # Build CSV — explicitly exclude password, only include relevant fields
+    output = io.StringIO()
+    output.write("\ufeff")  # UTF-8 BOM for Excel
+    writer = csv.writer(output)
+    writer.writerow(["Employee", "Department", "Total Shifts", "Total Hours"])
+
+    for emp in employee_data:
+        writer.writerow(
+            [
+                sanitize_csv_cell(f"{emp['user'].first_name} {emp['user'].last_name}"),
+                sanitize_csv_cell(emp["user"].department),
+                emp["shift_count"],
+                emp["total_hours_formatted"],
+            ]
+        )
+
+    csv_content = output.getvalue()
+    output.close()
+
+    filename = f"quarterly_report_{data['start_date']}_to_{data['end_date']}.csv"
+    return Response(
+        csv_content,
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.route("/punch_out/<int:shift_id>", methods=["POST"])
@@ -295,9 +554,11 @@ def update_shift(id):
     if request.form.get("source_page") == "shift_report":
         start_date = request.form.get("start_date")
         end_date = request.form.get("end_date")
-        return redirect(
-            url_for("shift_report", start_date=start_date, end_date=end_date)
-        )
+        employee_id = request.form.get("employee_id")
+        params = {"start_date": start_date, "end_date": end_date}
+        if employee_id:
+            params["employee_id"] = employee_id
+        return redirect(url_for("shift_report", **params))
 
     return redirect(f"/show/job/{job_id}")
 
@@ -722,11 +983,14 @@ def stale_shifts():
     # Get stale shifts (default threshold: 12 hours)
     stale_shifts_list = Shift.get_stale_shifts(hours_threshold=12)
 
+    recommended_batch_sizes = [5, 25]
+
     return render_template(
         "stale_shifts.html",
         stale_shifts=stale_shifts_list,
         logged_in_user=logged_in_user,
         shift_count=len(stale_shifts_list),
+        recommended_batch_sizes=recommended_batch_sizes,
     )
 
 
@@ -771,11 +1035,65 @@ def fix_all_stale_shifts():
         return redirect("/dashboard")
 
     try:
+        # Require explicit typed confirmation for all "Fix All" runs.
+        # Server-side enforcement — browser confirm() dialogs are bypassable via curl.
+        bulk_confirmation = (request.form.get("bulk_confirmation") or "").strip()
+        if bulk_confirmation != "FIX ALL":
+            flash(
+                "Bulk run blocked. Type FIX ALL exactly to confirm full remediation.",
+                "danger",
+            )
+            return redirect("/admin/stale_shifts")
+
         fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
         flash(f"Successfully fixed {fixed_count} stale shifts!", "success")
     except Exception as e:
         print(f"Error fixing all stale shifts: {e}")
         flash("An error occurred while fixing stale shifts.", "danger")
+
+    return redirect("/admin/stale_shifts")
+
+
+@app.route("/admin/fix_stale_shifts_batch", methods=["POST"])
+def fix_stale_shifts_batch():
+    """
+    Fix stale shifts in a controlled batch to allow safer progressive remediation.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    batch_size_raw = request.form.get("batch_size", "10")
+    try:
+        batch_size = int(batch_size_raw)
+    except (TypeError, ValueError):
+        flash("Batch size must be a whole number.", "danger")
+        return redirect("/admin/stale_shifts")
+
+    if batch_size < 1 or batch_size > 250:
+        flash("Batch size must be between 1 and 250.", "danger")
+        return redirect("/admin/stale_shifts")
+
+    try:
+        fixed_count = Shift.fix_stale_shifts_batch(
+            batch_size=batch_size, hours_threshold=12
+        )
+        if fixed_count > 0:
+            flash(
+                f"Pilot batch complete: fixed {fixed_count} stale shift(s) (oldest first).",
+                "success",
+            )
+        else:
+            flash("No stale shifts were fixed. There may be none remaining.", "warning")
+    except Exception as e:
+        print(f"Error fixing stale shifts batch: {e}")
+        flash("An error occurred while fixing the stale shift batch.", "danger")
 
     return redirect("/admin/stale_shifts")
 

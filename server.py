@@ -1,20 +1,21 @@
+import logging
+import fcntl
+import os
+import pytz
+import atexit
 from dotenv import load_dotenv
 
 load_dotenv()  # Must be called before any flask_app imports
 
-from flask_app import app
-from flask_app.controllers import users, jobs, shifts, version
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
 from flask_app.utils.scheduler_tasks import (
     automated_job_sync,
     auto_clock_out_shifts_at_6pm_weekdays,
 )
-import atexit
-import pytz
-import os
-import fcntl
-import logging
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask_app.controllers import users, jobs, shifts, version
+from flask_app import app
+
 
 # from flask_app.config.config import ss_client
 # from flask_app.controllers.webhooks_controller import webhooks_blueprint, setup_webhook
@@ -87,7 +88,9 @@ def start_scheduler_if_enabled():
     try:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
-        scheduler_logger.info("Scheduler lock already held; not starting in this process")
+        scheduler_logger.info(
+            "Scheduler lock already held; not starting in this process"
+        )
         lock_file.close()
         return False
 
@@ -116,7 +119,9 @@ def start_scheduler_if_enabled():
     _scheduler_lock_file = lock_file
     atexit.register(_shutdown_scheduler)
 
-    scheduler_logger.info("Scheduler started with daily 6AM sync and weekday 6PM auto clock-out")
+    scheduler_logger.info(
+        "Scheduler started with daily 6AM sync and weekday 6PM auto clock-out"
+    )
     return True
 
 
