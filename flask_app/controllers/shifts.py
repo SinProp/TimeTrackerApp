@@ -983,7 +983,7 @@ def stale_shifts():
     # Get stale shifts (default threshold: 12 hours)
     stale_shifts_list = Shift.get_stale_shifts(hours_threshold=12)
 
-    recommended_batch_sizes = [5, 25, 100]
+    recommended_batch_sizes = [5, 25]
 
     return render_template(
         "stale_shifts.html",
