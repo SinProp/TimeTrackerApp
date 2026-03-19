@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quarterly Report - Island Time</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .custom-header {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            padding: 30px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .form-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            color: white;
+            font-weight: 600;
+        }
+        .form-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+        .form-control, .form-select {
+            border-radius: 30px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .quarter-btn {
+            min-width: 100px;
+        }
+        .quarter-btn.active {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: white !important;
+        }
+        .report-results {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: #2c3e50;
+        }
+        .report-summary {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        .report-summary h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .dept-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--primary-color);
+        }
+        .dept-header h6 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+        .dept-subtotal {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .custom-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .custom-table thead {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .custom-table thead th {
+            padding: 12px;
+            font-weight: 600;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .custom-table thead th:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .custom-table tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .custom-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .custom-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+        .sort-indicator.active {
+            color: var(--accent-color);
+        }
+        .time-badge {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .view-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .view-link:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+        }
+        .logo-footer {
+            max-height: 100px;
+            margin-top: 30px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        .logo-footer:hover {
+            opacity: 1;
+        }
+
+        /* Print styles */
+        @media print {
+            .custom-header, .form-card, .action-bar, .btn,
+            .logo-footer, .view-link, .no-print { display: none !important; }
+            body { background: white !important; }
+            .report-results {
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .report-summary {
+                background: #eee !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .custom-table thead {
+                background: #333 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .time-badge {
+                background: none !important;
+                color: black !important;
+                padding: 0 !important;
+                font-weight: bold;
+            }
+            .print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .dept-header { border-left-color: #333 !important; }
+        }
+        .print-header { display: none; }
+    </style>
+</head>
+<body>
+    <header class="custom-header text-white py-3">
+        <div class="container text-center">
+            <a href="/dashboard" class="navbar-brand d-flex justify-content-center align-items-center text-white text-decoration-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2 bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584.531.531 0 0 0 .013-.012l.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354a.717.717 0 0 0-.012.012A6.973 6.973 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1h-3zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0z"/>
+                </svg>
+                <strong><span class="fs-4 fw-bold">Island Time</span> <span class="fs-6 fst-italic">by Island Millwork Inc</span></strong>
+            </a>
+        </div>
+    </header>
+
+    <main role="main">
+        <div class="py-4 bg-light">
+            <div class="container">
+
+                <!-- Print-only header -->
+                <div class="print-header">
+                    <h2>Quarterly Employee Report</h2>
+                    {% if start_date and end_date %}
+                    <p>{{ start_date }} to {{ end_date }} &mdash; Island Time by Island Millwork Inc</p>
+                    {% endif %}
+                </div>
+
+                <!-- Controls -->
+                <div class="form-card">
+                    <h4 class="form-title text-center"><i class="fas fa-chart-pie me-2"></i>Quarterly Employee Report</h4>
+
+                    <!-- Quarter presets -->
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        {% set current_year = current_year %}
+                        <a href="/quarterly_report/q/1" class="btn btn-outline-light quarter-btn" aria-label="Q1 {{ current_year }}">
+                            <i class="fas fa-calendar me-1"></i>Q1 {{ current_year }}
+                        </a>
+                        <a href="/quarterly_report/q/2" class="btn btn-outline-light quarter-btn" aria-label="Q2 {{ current_year }}">
+                            <i class="fas fa-calendar me-1"></i>Q2 {{ current_year }}
+                        </a>
+                        <a href="/quarterly_report/q/3" class="btn btn-outline-light quarter-btn" aria-label="Q3 {{ current_year }}">
+                            <i class="fas fa-calendar me-1"></i>Q3 {{ current_year }}
+                        </a>
+                        <a href="/quarterly_report/q/4" class="btn btn-outline-light quarter-btn" aria-label="Q4 {{ current_year }}">
+                            <i class="fas fa-calendar me-1"></i>Q4 {{ current_year }}
+                        </a>
+                    </div>
+
+                    <hr class="my-3" style="border-color: rgba(255,255,255,0.3);">
+                    <h6 class="text-center mb-3 text-white-50">Custom Date Range</h6>
+
+                    <form action="/quarterly_report" method="POST">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label for="start_date" class="form-label"><i class="fas fa-calendar-alt me-1"></i>Start Date</label>
+                                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|default('') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="end_date" class="form-label"><i class="fas fa-calendar-check me-1"></i>End Date</label>
+                                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|default('') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="employee_id" class="form-label"><i class="fas fa-user me-1"></i>Employee</label>
+                                <select name="employee_id" id="employee_id" class="form-select">
+                                    <option value="all">All Employees</option>
+                                    {% if all_users %}
+                                    {% for u in all_users %}
+                                    <option value="{{ u.id }}" {% if employee_id and employee_id|string == u.id|string %}selected{% endif %}>
+                                        {{ u.first_name }} {{ u.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-grid">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i>Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Results -->
+                {% if department_data is defined and department_data %}
+                <div class="report-results">
+
+                    <!-- Summary bar -->
+                    <div class="report-summary">
+                        <div class="row text-center">
+                            <div class="col-6 col-md-3">
+                                <h5><i class="fas fa-clock me-1"></i>{{ total_hours }}</h5>
+                                <small>Total Hours</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <h5><i class="fas fa-list me-1"></i>{{ total_shifts }}</h5>
+                                <small>Total Shifts</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <h5><i class="fas fa-users me-1"></i>{{ total_employees }}</h5>
+                                <small>Employees</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <h5><i class="fas fa-calendar me-1"></i>{{ start_date }} &mdash; {{ end_date }}</h5>
+                                <small>Date Range</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if filtered_employee_name %}
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-filter me-2"></i>Showing results for <strong>{{ filtered_employee_name }}</strong>
+                        <a href="{{ url_for('quarterly_report', start_date=start_date, end_date=end_date) }}" class="ms-2">
+                            <i class="fas fa-times"></i> Clear filter
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action bar -->
+                    <div class="action-bar no-print">
+                        <a href="{{ url_for('quarterly_report_csv', start_date=start_date, end_date=end_date, employee_id=employee_id|default('')) }}"
+                           class="btn btn-sm btn-outline-success"
+                           aria-label="Download quarterly report as CSV">
+                            <i class="fas fa-file-csv me-1"></i>Download CSV
+                        </a>
+                        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-print me-1"></i>Print
+                        </button>
+                        <a href="/dashboard" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-arrow-left me-1"></i>Dashboard
+                        </a>
+                    </div>
+
+                    <!-- Department sections -->
+                    {% for dept in department_data %}
+                    <div class="dept-header">
+                        <h6><i class="fas fa-building me-2"></i>{{ dept.department }} ({{ dept.employees|length }} employee{{ 's' if dept.employees|length != 1 }})</h6>
+                        <span class="dept-subtotal">Subtotal: {{ dept.total_hours_formatted }} &bull; {{ dept.shift_count }} shifts</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table custom-table" aria-label="{{ dept.department }} department employee hours">
+                            <caption class="visually-hidden">{{ dept.department }} department quarterly hours summary</caption>
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="name"><i class="fas fa-user me-1"></i>Employee <span class="sort-indicator">&#8693;</span></th>
+                                    <th class="sortable" data-sort="shifts"><i class="fas fa-list me-1"></i>Shifts <span class="sort-indicator">&#8693;</span></th>
+                                    <th class="sortable" data-sort="hours"><i class="fas fa-hourglass-half me-1"></i>Total Hours <span class="sort-indicator active">&#9660;</span></th>
+                                    <th class="no-print"><i class="fas fa-eye me-1"></i>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in dept.employees %}
+                                <tr data-name="{{ emp.user.first_name }} {{ emp.user.last_name }}"
+                                    data-shifts="{{ emp.shift_count }}"
+                                    data-hours="{{ emp.total_seconds }}">
+                                    <td><strong>{{ emp.user.first_name }} {{ emp.user.last_name }}</strong></td>
+                                    <td>{{ emp.shift_count }}</td>
+                                    <td><span class="time-badge">{{ emp.total_hours_formatted }}</span></td>
+                                    <td class="no-print">
+                                        <a href="{{ url_for('shift_report', start_date=start_date, end_date=end_date, employee_id=emp.user.id) }}"
+                                           class="view-link"
+                                           aria-label="View shift details for {{ emp.user.first_name }} {{ emp.user.last_name }}">
+                                            View <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+
+                </div>
+
+                {% elif start_date is defined and start_date and end_date is defined and end_date %}
+                <!-- Empty state -->
+                <div class="report-results">
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <h5 class="text-muted mt-3">No shift data recorded for this period.</h5>
+                        <p class="text-muted">Try selecting a different quarter or check that shifts have been clocked out.</p>
+                        <a href="/dashboard" class="btn btn-outline-primary mt-2"><i class="fas fa-arrow-left me-1"></i>Back to Dashboard</a>
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- Initial state: no dates selected yet -->
+                <div class="report-results">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-pie" style="color: var(--primary-color);"></i>
+                        <h5 class="mt-3">Select a quarter or enter a custom date range to generate the report.</h5>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="text-center mt-4 no-print">
+                    <img src="/static/img/IMLOGO.png" class="logo-footer" alt="Island Millwork Inc Logo">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Client-side column sorting
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.addEventListener('click', function() {
+            const table = this.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const sortKey = this.dataset.sort;
+            const isAsc = this.classList.contains('sort-asc');
+
+            // Reset all indicators in this table
+            table.querySelectorAll('.sort-indicator').forEach(el => {
+                el.innerHTML = '&#8693;';
+                el.classList.remove('active');
+            });
+
+            rows.sort((a, b) => {
+                let aVal, bVal;
+                if (sortKey === 'name') {
+                    aVal = a.dataset.name.toLowerCase();
+                    bVal = b.dataset.name.toLowerCase();
+                    return isAsc ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+                } else if (sortKey === 'shifts') {
+                    aVal = parseInt(a.dataset.shifts);
+                    bVal = parseInt(b.dataset.shifts);
+                } else if (sortKey === 'hours') {
+                    aVal = parseFloat(a.dataset.hours);
+                    bVal = parseFloat(b.dataset.hours);
+                }
+                return isAsc ? aVal - bVal : bVal - aVal;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Update indicator
+            const indicator = this.querySelector('.sort-indicator');
+            indicator.innerHTML = isAsc ? '&#9650;' : '&#9660;';
+            indicator.classList.add('active');
+            this.classList.toggle('sort-asc', !isAsc);
+            this.classList.toggle('sort-desc', isAsc);
+        });
+    });
+    </script>
+</body>
+</html>

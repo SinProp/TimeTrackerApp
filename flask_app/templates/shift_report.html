@@ -170,6 +170,13 @@
         </div>
     </header>
     <main role="main">
+        {% if back_to_quarterly is defined and back_to_quarterly %}
+        <div class="container mt-3">
+            <a href="{{ back_to_quarterly }}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Quarterly Report
+            </a>
+        </div>
+        {% endif %}
         <section class="jumbotron text-center">
             <div class="container">
                 <h1 class="display-4 fw-bold mb-3">Man-Hour Job Costing Application</h1>
@@ -316,6 +323,9 @@
                     <input type="hidden" name="source_page" value="shift_report">
                     <input type="hidden" name="start_date" value="{{ start_date }}">
                     <input type="hidden" name="end_date" value="{{ end_date }}">
+                    {% if employee_id is defined and employee_id %}
+                    <input type="hidden" name="employee_id" value="{{ employee_id }}">
+                    {% endif %}
                     <div class="mb-3">
                         <label for="edit_im_number" class="form-label">IM Number</label>
                         <select class="form-select" id="edit_im_number" name="job_id">
