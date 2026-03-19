@@ -744,7 +744,7 @@ class Shift:
                 WHERE updated_at IS NULL
                 AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s
                 ORDER BY created_at ASC
-                LIMIT {target_count};
+                LIMIT {int(target_count)};  -- int() cast guards copy-paste reuse
             """
             connectToMySQL(cls.db_name).query_db(
                 query, {"hours_threshold": hours_threshold}

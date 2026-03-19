@@ -237,6 +237,11 @@ def shift_report():
 def shift_report_last_week():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=7)
     return render_shift_report(start_date, end_date)
@@ -246,6 +251,11 @@ def shift_report_last_week():
 def shift_report_last_two_weeks():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=14)
     return render_shift_report(start_date, end_date)
@@ -255,6 +265,11 @@ def shift_report_last_two_weeks():
 def shift_report_last_month():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     today = datetime.utcnow().date()
     first_day_current = today.replace(day=1)
     end_date = first_day_current - timedelta(days=1)
@@ -266,6 +281,11 @@ def shift_report_last_month():
 def shift_report_current_month():
     if "user_id" not in session:
         return redirect("/logout")
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
     today = datetime.utcnow().date()
     start_date = today.replace(day=1)
     end_date = today
@@ -428,7 +448,7 @@ def quarterly_report_csv():
     return Response(
         csv_content,
         mimetype="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
