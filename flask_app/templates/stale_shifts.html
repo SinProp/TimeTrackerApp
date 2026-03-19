@@ -104,6 +104,13 @@
         margin-bottom: 20px;
         border-radius: 5px;
       }
+
+      .danger-zone {
+        background-color: #fff5f5;
+        border-left: 4px solid #dc3545;
+        padding: 15px;
+        border-radius: 5px;
+      }
     </style>
 </head>
 <body>
@@ -161,13 +168,38 @@
                         </div>
 
                         {% if stale_shifts %}
-                            <!-- Fix All Button at Top -->
-                            <div class="d-flex justify-content-end mb-3">
-                                <form action="/admin/fix_all_stale_shifts" method="post" onsubmit="return confirm('Are you sure you want to fix ALL {{ shift_count }} stale shifts? This will set their end time to 3:30 PM on the day they started.');">
-                                    <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-wrench me-2"></i>Fix All {{ shift_count }} Stale Shifts
-                                    </button>
-                                </form>
+                            <div class="alert alert-warning d-flex align-items-start mb-4">
+                                <i class="fas fa-shield-alt me-2 mt-1"></i>
+                                <div>
+                                    <strong>Safer rollout enabled:</strong> run small batches first, verify shift reports/payroll, then continue.
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <form action="/admin/fix_stale_shifts_batch" method="post" onsubmit="return confirm('Run a pilot batch of {{ recommended_batch_sizes[0] }} oldest stale shifts?');">
+                                        <input type="hidden" name="batch_size" value="{{ recommended_batch_sizes[0] }}">
+                                        <button type="submit" class="btn btn-warning w-100">
+                                            <i class="fas fa-vial me-2"></i>Pilot {{ recommended_batch_sizes[0] }}
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="col-md-3">
+                                    <form action="/admin/fix_stale_shifts_batch" method="post" onsubmit="return confirm('Run a small batch of {{ recommended_batch_sizes[1] }} oldest stale shifts?');">
+                                        <input type="hidden" name="batch_size" value="{{ recommended_batch_sizes[1] }}">
+                                        <button type="submit" class="btn btn-outline-warning w-100">
+                                            <i class="fas fa-layer-group me-2"></i>Small {{ recommended_batch_sizes[1] }}
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="col-md-6">
+                                    <form action="/admin/fix_stale_shifts_batch" method="post" class="d-flex gap-2" onsubmit="return confirm('Run this custom batch and fix oldest stale shifts first?');">
+                                        <input type="number" min="1" max="250" value="10" name="batch_size" class="form-control" placeholder="Custom batch size (1-250)" required>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-wrench me-2"></i>Run Batch
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -211,11 +243,13 @@
                                 </table>
                             </div>
 
-                            <!-- Fix All Button at Bottom -->
-                            <div class="d-flex justify-content-end mt-4">
-                                <form action="/admin/fix_all_stale_shifts" method="post" onsubmit="return confirm('Are you sure you want to fix ALL {{ shift_count }} stale shifts? This will set their end time to 3:30 PM on the day they started.');">
+                            <div class="danger-zone mt-4">
+                                <h5 class="text-danger mb-2"><i class="fas fa-radiation me-2"></i>Danger Zone: Full Bulk Run</h5>
+                                <p class="mb-3">Use this only after pilot batches look correct. For large runs, you must type <strong>FIX ALL</strong>.</p>
+                                <form action="/admin/fix_all_stale_shifts" method="post" class="d-flex flex-wrap gap-2" onsubmit="return confirm('Final confirmation: run full stale shift remediation for all remaining shifts?');">
+                                    <input type="text" name="bulk_confirmation" class="form-control" style="max-width: 220px;" placeholder="Type FIX ALL">
                                     <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-wrench me-2"></i>Fix All {{ shift_count }} Stale Shifts
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Fix All Remaining ({{ shift_count }})
                                     </button>
                                 </form>
                             </div>
