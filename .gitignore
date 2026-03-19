@@ -33,3 +33,7 @@ build/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Tooling artifacts
+.claude/command-history.log
+.codex/
