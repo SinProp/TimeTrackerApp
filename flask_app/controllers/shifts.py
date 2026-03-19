@@ -397,6 +397,14 @@ def quarterly_report_csv():
     shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
     employee_data = Shift.group_shifts_by_employee(shifts)
 
+    # Sanitize cell values to prevent CSV/Excel formula injection.
+    # Values starting with =, +, -, @ are interpreted as formulas by Excel.
+    def sanitize_csv_cell(val):
+        s = str(val)
+        if s and s[0] in ("=", "+", "-", "@"):
+            return "'" + s
+        return s
+
     # Build CSV — explicitly exclude password, only include relevant fields
     output = io.StringIO()
     output.write("\ufeff")  # UTF-8 BOM for Excel
@@ -406,8 +414,8 @@ def quarterly_report_csv():
     for emp in employee_data:
         writer.writerow(
             [
-                f"{emp['user'].first_name} {emp['user'].last_name}",
-                emp["user"].department,
+                sanitize_csv_cell(f"{emp['user'].first_name} {emp['user'].last_name}"),
+                sanitize_csv_cell(emp["user"].department),
                 emp["shift_count"],
                 emp["total_hours_formatted"],
             ]
