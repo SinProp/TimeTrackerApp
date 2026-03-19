@@ -3,6 +3,10 @@ import fcntl
 import os
 import pytz
 import atexit
+from dotenv import load_dotenv
+
+load_dotenv()  # Must be called before any flask_app imports
+
 from flask_app.utils.scheduler_tasks import (
     automated_job_sync,
     auto_clock_out_shifts_at_6pm_weekdays,
@@ -11,9 +15,6 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_app.controllers import users, jobs, shifts, version
 from flask_app import app
-from dotenv import load_dotenv
-
-load_dotenv()  # Must be called before any flask_app imports
 
 
 # from flask_app.config.config import ss_client
@@ -81,15 +82,15 @@ def start_scheduler_if_enabled():
     if _scheduler is not None and _scheduler.running:
         return True
 
-    lock_path = os.environ.get(
-        "SCHEDULER_LOCK_FILE", "/tmp/island_time_scheduler.lock")
+    lock_path = os.environ.get("SCHEDULER_LOCK_FILE", "/tmp/island_time_scheduler.lock")
     lock_file = open(lock_path, "a+")
 
     try:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         scheduler_logger.info(
-            "Scheduler lock already held; not starting in this process")
+            "Scheduler lock already held; not starting in this process"
+        )
         lock_file.close()
         return False
 
@@ -106,8 +107,7 @@ def start_scheduler_if_enabled():
 
     scheduler.add_job(
         func=auto_clock_out_shifts_at_6pm_weekdays,
-        trigger=CronTrigger(day_of_week="mon-fri", hour=18,
-                            minute=0, timezone=eastern),
+        trigger=CronTrigger(day_of_week="mon-fri", hour=18, minute=0, timezone=eastern),
         id="weekday_auto_clock_out_shifts",
         name="Weekday Auto Clock-Out Shifts at 6:00 PM",
         replace_existing=True,
@@ -120,7 +120,8 @@ def start_scheduler_if_enabled():
     atexit.register(_shutdown_scheduler)
 
     scheduler_logger.info(
-        "Scheduler started with daily 6AM sync and weekday 6PM auto clock-out")
+        "Scheduler started with daily 6AM sync and weekday 6PM auto clock-out"
+    )
     return True
 
 

@@ -225,7 +225,9 @@ def shift_report():
         return redirect("/dashboard")
 
     start_date, end_date = parse_date_range(request)
-    employee_id = request.args.get("employee_id") or request.form.get("employee_id")
+    employee_id = normalize_employee_id(
+        request.args.get("employee_id") or request.form.get("employee_id")
+    )
 
     if start_date and end_date:
         return render_shift_report(start_date, end_date, employee_id=employee_id)
@@ -1033,16 +1035,15 @@ def fix_all_stale_shifts():
         return redirect("/dashboard")
 
     try:
-        stale_count = Shift.count_stale_shifts(hours_threshold=12)
-        # Require explicit typed confirmation for large bulk runs.
-        if stale_count >= 100:
-            bulk_confirmation = (request.form.get("bulk_confirmation") or "").strip()
-            if bulk_confirmation != "FIX ALL":
-                flash(
-                    "Bulk run blocked. Type FIX ALL exactly to confirm large remediation.",
-                    "danger",
-                )
-                return redirect("/admin/stale_shifts")
+        # Require explicit typed confirmation for all "Fix All" runs.
+        # Server-side enforcement — browser confirm() dialogs are bypassable via curl.
+        bulk_confirmation = (request.form.get("bulk_confirmation") or "").strip()
+        if bulk_confirmation != "FIX ALL":
+            flash(
+                "Bulk run blocked. Type FIX ALL exactly to confirm full remediation.",
+                "danger",
+            )
+            return redirect("/admin/stale_shifts")
 
         fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
         flash(f"Successfully fixed {fixed_count} stale shifts!", "success")

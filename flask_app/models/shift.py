@@ -169,6 +169,8 @@ class Shift:
         )
 
         for shift in shifts:
+            if not shift.creator:
+                continue  # skip orphaned shifts (user deleted or LEFT JOIN miss)
             uid = shift.creator.id
             if grouped[uid]["user"] is None:
                 grouped[uid]["user"] = shift.creator
