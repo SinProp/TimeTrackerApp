@@ -4,8 +4,11 @@ from datetime import datetime
 import logging
 
 # Set up logging for scheduler
-logging.basicConfig(level=logging.INFO)
+# StreamHandler ensures output reaches gunicorn's error log (not just root logger)
 scheduler_logger = logging.getLogger("scheduler")
+scheduler_logger.setLevel(logging.INFO)
+if not scheduler_logger.handlers:
+    scheduler_logger.addHandler(logging.StreamHandler())
 
 
 def auto_clock_out_shifts_at_6pm_weekdays():
@@ -26,8 +29,27 @@ def auto_clock_out_shifts_at_6pm_weekdays():
         return f"Closed {closed_count} open shifts at 6:00 PM using 3:30 PM mapping"
 
     except Exception as e:
-        scheduler_logger.error(
-            f"Error in weekday 6:00 PM auto clock-out: {str(e)}")
+        scheduler_logger.error(f"Error in weekday 6:00 PM auto clock-out: {str(e)}")
+        return f"Error: {str(e)}"
+
+
+def auto_fix_stale_shifts():
+    """
+    Automatically fix stale shifts (open >12 hours) from previous days.
+    Runs at 6:30 PM EST on weekdays, 30 minutes after same-day auto clock-out.
+    """
+    try:
+        scheduler_logger.info(f"Starting stale shift cleanup at {datetime.now()}")
+
+        fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
+
+        scheduler_logger.info(
+            f"Stale shift cleanup completed. Fixed {fixed_count} shifts open >12 hours."
+        )
+        return f"Fixed {fixed_count} stale shifts open >12 hours"
+
+    except Exception as e:
+        scheduler_logger.error(f"Error in stale shift cleanup: {str(e)}")
         return f"Error: {str(e)}"
 
 
@@ -43,8 +65,7 @@ def automated_job_sync():
     - If job is new: Insert it with visible_to_production=TRUE
     """
     try:
-        scheduler_logger.info(
-            f"Starting automated Dataverse sync at {datetime.now()}")
+        scheduler_logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
 
         # Get approved jobs from Dataverse
         approved_jobs = Job.get_approved_jobs_from_dataverse()
@@ -68,24 +89,28 @@ def automated_job_sync():
             if job["im_number"] in existing_im_numbers:
                 # Update existing job and make it visible
                 try:
-                    Job.update_from_dataverse(job["im_number"], {
-                        "general_contractor": job["general_contractor"],
-                        "job_scope": job["job_scope"],
-                    })
+                    Job.update_from_dataverse(
+                        job["im_number"],
+                        {
+                            "general_contractor": job["general_contractor"],
+                            "job_scope": job["job_scope"],
+                        },
+                    )
                     updated_count += 1
                     scheduler_logger.info(
-                        f"Updated existing job IM #{job['im_number']} from Dataverse")
+                        f"Updated existing job IM #{job['im_number']} from Dataverse"
+                    )
                 except Exception as e:
                     scheduler_logger.error(
-                        f"Error updating job {job['im_number']}: {e}")
+                        f"Error updating job {job['im_number']}: {e}"
+                    )
             else:
                 # New job - will be bulk inserted
                 new_jobs.append(job)
 
         # Log which new jobs are being processed
         for job in new_jobs:
-            scheduler_logger.info(
-                f"Adding new job with IM number: {job['im_number']}")
+            scheduler_logger.info(f"Adding new job with IM number: {job['im_number']}")
 
         # OPTIMIZED: Insert all new jobs in one query instead of N queries
         added_count = Job.bulk_add_records(new_jobs) if new_jobs else 0

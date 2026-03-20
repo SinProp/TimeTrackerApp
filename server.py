@@ -10,6 +10,7 @@ load_dotenv()  # Must be called before any flask_app imports
 from flask_app.utils.scheduler_tasks import (
     automated_job_sync,
     auto_clock_out_shifts_at_6pm_weekdays,
+    auto_fix_stale_shifts,
 )
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -113,6 +114,16 @@ def start_scheduler_if_enabled():
         replace_existing=True,
     )
 
+    scheduler.add_job(
+        func=auto_fix_stale_shifts,
+        trigger=CronTrigger(
+            day_of_week="mon-fri", hour=18, minute=30, timezone=eastern
+        ),
+        id="auto_fix_stale_shifts",
+        name="Auto Fix Stale Shifts (>12 hrs open)",
+        replace_existing=True,
+    )
+
     scheduler.start()
 
     _scheduler = scheduler
@@ -120,7 +131,7 @@ def start_scheduler_if_enabled():
     atexit.register(_shutdown_scheduler)
 
     scheduler_logger.info(
-        "Scheduler started with daily 6AM sync and weekday 6PM auto clock-out"
+        "Scheduler started with daily 6AM sync, weekday 6PM auto clock-out, and 6:30PM stale shift cleanup"
     )
     return True
 
