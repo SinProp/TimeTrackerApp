@@ -357,7 +357,11 @@ def quarterly_report():
         possible_seconds = workdays * HOURS_PER_WORKDAY * 3600
         total_possible_formatted = format_seconds_as_hms(possible_seconds)
         overall_utilization = None
-        roster_count = len(all_users) if all_users else len(employee_data)
+        roster_count = (
+            len(employee_data)
+            if employee_id
+            else (len(all_users) if all_users else len(employee_data))
+        )
         if possible_seconds > 0 and roster_count > 0:
             avg_seconds = total_seconds / roster_count
             overall_utilization = round(avg_seconds / possible_seconds * 100, 1)
