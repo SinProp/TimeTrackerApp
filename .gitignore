@@ -37,3 +37,6 @@ build/
 # Tooling artifacts
 .claude/command-history.log
 .codex/
+
+# Generated reports
+docs/kpi-*.txt
