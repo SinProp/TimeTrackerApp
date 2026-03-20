@@ -13,6 +13,8 @@ HOURS_PER_WORKDAY = 6.5
 
 def format_seconds_as_hms(total_seconds):
     """Convert a number of seconds to HH:MM:SS string."""
+    if total_seconds < 0:
+        total_seconds = 0
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))

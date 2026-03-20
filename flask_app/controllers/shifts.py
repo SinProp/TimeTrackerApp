@@ -357,8 +357,9 @@ def quarterly_report():
         possible_seconds = workdays * HOURS_PER_WORKDAY * 3600
         total_possible_formatted = format_seconds_as_hms(possible_seconds)
         overall_utilization = None
-        if possible_seconds > 0 and employee_data:
-            avg_seconds = total_seconds / len(employee_data)
+        roster_count = len(all_users) if all_users else len(employee_data)
+        if possible_seconds > 0 and roster_count > 0:
+            avg_seconds = total_seconds / roster_count
             overall_utilization = round(avg_seconds / possible_seconds * 100, 1)
 
         # Did we cap the end date at today?
@@ -485,9 +486,9 @@ def quarterly_report_csv():
                 sanitize_csv_cell(f"{emp['user'].first_name} {emp['user'].last_name}"),
                 sanitize_csv_cell(emp["user"].department),
                 emp["shift_count"],
-                emp["total_hours_formatted"],
-                possible_display,
-                util_display,
+                sanitize_csv_cell(emp["total_hours_formatted"]),
+                sanitize_csv_cell(possible_display),
+                sanitize_csv_cell(util_display),
             ]
         )
 

@@ -540,7 +540,7 @@
                 if (sortKey === 'name') {
                     aVal = a.dataset.name.toLowerCase();
                     bVal = b.dataset.name.toLowerCase();
-                    return isAsc ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+                    return isAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                 } else if (sortKey === 'shifts') {
                     aVal = parseInt(a.dataset.shifts);
                     bVal = parseInt(b.dataset.shifts);
