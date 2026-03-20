@@ -19,6 +19,9 @@ pip install -r requirements.txt
 # Run development server (http://localhost:5000)
 python server.py
 
+# Run tests
+python3 -m pytest tests/ -v
+
 # Production SSH access
 ssh island-time  # Configured in ~/.ssh/config
 
@@ -109,12 +112,13 @@ Only `department == 'ADMINISTRATIVE'` users can edit other users' jobs/shifts.
 
 ## Key Files
 
-| File                                  | Responsibility                                 |
-| ------------------------------------- | ---------------------------------------------- |
-| `flask_app/dataverse/client.py`       | OAuth2 (MSAL) + REST client with token caching |
-| `flask_app/dataverse/service.py`      | `get_approved_jobs()`, Dataverse API wrapper   |
-| `flask_app/utils/scheduler_tasks.py`  | Daily 6 AM EST sync logic                      |
-| `flask_app/config/mysqlconnection.py` | DB abstraction with query logging              |
+| File                                  | Responsibility                                                |
+| ------------------------------------- | ------------------------------------------------------------- |
+| `flask_app/dataverse/client.py`       | OAuth2 (MSAL) + REST client with token caching                |
+| `flask_app/dataverse/service.py`      | `get_approved_jobs()`, Dataverse API wrapper                  |
+| `flask_app/utils/scheduler_tasks.py`  | Daily 6 AM EST sync logic + stale shift cleanup               |
+| `flask_app/config/mysqlconnection.py` | DB abstraction with query logging                             |
+| `tests/test_shift_utils.py`           | Unit tests for `count_workdays`, `enrich_with_possible_hours` |
 
 ## Gotchas
 
