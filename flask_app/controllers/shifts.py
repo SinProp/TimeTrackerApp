@@ -771,7 +771,13 @@ def manage_shifts():
 def destroy_shift(id):
     if "user_id" not in session:
         return redirect("/logout")
-    print(f"Deleting shift with id: {id}")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
 
     data = {"id": id}
     Shift.destroy(data)

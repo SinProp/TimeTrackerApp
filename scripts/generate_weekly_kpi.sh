@@ -411,7 +411,9 @@ else:
 report_text = "\n".join(lines).rstrip() + "\n"
 
 if OUTPUT_FILE:
-    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    out_dir = os.path.dirname(OUTPUT_FILE)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     with open(OUTPUT_FILE, "w", encoding="ascii", errors="ignore") as handle:
         handle.write(report_text)
 

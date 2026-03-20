@@ -26,7 +26,7 @@ class TestCountWorkdays:
         assert capped == date(2025, 1, 10)
 
     def test_q1_2026_full_quarter(self):
-        """Jan 1 - Mar 31, 2026 has 63 workdays (verified by calendar)."""
+        """Jan 1 - Mar 31, 2026 has 64 workdays (22 Jan + 20 Feb + 22 Mar)."""
         with patch("flask_app.models.shift.date") as mock_date:
             mock_date.today.return_value = date(2026, 4, 2)
             mock_date.side_effect = lambda *args, **kw: date(*args, **kw)

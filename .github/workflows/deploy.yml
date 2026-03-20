@@ -3,12 +3,12 @@ name: Deploy to AWS EC2
 on:
   push:
     branches:
-      - main  # Triggers on push to main branch
+      - main # Triggers on push to main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
@@ -19,15 +19,17 @@ jobs:
           port: 22
           script: |
             cd /home/ubuntu/Island-Time
-            
+
             # Pull latest code
             git pull origin main
-            
+
             # Install/update Python dependencies
             source venv/bin/activate
             pip3 install -r requirements.txt
-            
-            # Restart Gunicorn gracefully (HUP signal reloads workers)
-            sudo pkill -HUP gunicorn
-            
+
+            # Restart Gunicorn (full restart to ensure scheduler re-initializes)
+            sudo systemctl restart gunicorn || sudo pkill gunicorn || true
+            sleep 2
+            sudo systemctl start gunicorn || true
+
             echo "Deployment completed successfully!"
