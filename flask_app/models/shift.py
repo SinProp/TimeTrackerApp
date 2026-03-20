@@ -850,3 +850,68 @@ class Shift:
             connectToMySQL(cls.db_name).query_db(query)
 
         return count
+
+    # ============ Multi-Day Shift Correction ============
+
+    @classmethod
+    def count_multiday_shifts(cls):
+        """
+        Count shifts where updated_at is on a different day than created_at.
+        These are shifts that were clocked out days later instead of on the same day.
+        """
+        query = """
+            SELECT COUNT(*) as count FROM shifts
+            WHERE updated_at IS NOT NULL
+            AND DATE(updated_at) != DATE(created_at);
+        """
+        result = connectToMySQL(cls.db_name).query_db(query)
+        return result[0]["count"] if result else 0
+
+    @classmethod
+    def get_multiday_shifts(cls):
+        """
+        Find shifts where updated_at is on a different day than created_at.
+        Returns shift data with user and job info for review.
+        """
+        query = """
+            SELECT shifts.*,
+                users.first_name, users.last_name, users.department,
+                jobs.im_number,
+                TIMEDIFF(shifts.updated_at, shifts.created_at) as elapsed_time
+            FROM shifts
+            JOIN users ON shifts.user_id = users.id
+            LEFT JOIN jobs ON shifts.job_id = jobs.id
+            WHERE shifts.updated_at IS NOT NULL
+            AND DATE(shifts.updated_at) != DATE(shifts.created_at)
+            ORDER BY shifts.created_at ASC;
+        """
+        return connectToMySQL(cls.db_name).query_db(query) or []
+
+    @classmethod
+    def fix_multiday_shifts(cls):
+        """
+        Fix all shifts where updated_at is on a different day than created_at.
+
+        Corrects end time to 3:30 PM on the day the shift started:
+        - If shift started BEFORE 3:30 PM: end at 3:30 PM same day
+        - If shift started AT or AFTER 3:30 PM: end at start time (0 duration)
+
+        Returns:
+            Number of shifts fixed
+        """
+        count = cls.count_multiday_shifts()
+
+        if count > 0:
+            query = """
+                UPDATE shifts
+                SET updated_at = CASE
+                    WHEN TIME(created_at) < '15:30:00'
+                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
+                    ELSE created_at
+                END
+                WHERE updated_at IS NOT NULL
+                AND DATE(updated_at) != DATE(created_at);
+            """
+            connectToMySQL(cls.db_name).query_db(query)
+
+        return count

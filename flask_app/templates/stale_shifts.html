@@ -272,6 +272,27 @@
                                 <i class="fas fa-tools me-2"></i>Fix Negative Duration Shifts
                             </button>
                         </form>
+
+                        <!-- Fix Multi-Day Shifts Section -->
+                        <hr class="my-4">
+                        <h4 class="text-warning"><i class="fas fa-calendar-times me-2"></i>Fix Multi-Day Shifts</h4>
+                        <div class="info-box">
+                            <i class="fas fa-calendar-alt me-2 text-warning"></i>
+                            <strong>Data Repair:</strong> Finds shifts where the clock-out date is on a <strong>different day</strong> than the clock-in date
+                            (e.g., clocked in Monday, clocked out Thursday). These are shifts that were closed days late instead of on the same day.
+                            Fixing them will correct the end time to <strong>3:30 PM on the day the shift started</strong>.
+                        </div>
+                        {% if multiday_count > 0 %}
+                            <form action="/admin/fix_multiday_shifts" method="post" onsubmit="return confirm('Fix {{ multiday_count }} multi-day shifts? Their end time will be corrected to 3:30 PM on the day they started.');">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-calendar-check me-2"></i>Fix {{ multiday_count }} Multi-Day Shift{{ 's' if multiday_count != 1 }}
+                                </button>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-success py-2">
+                                <i class="fas fa-check-circle me-2"></i>No multi-day shifts found. All shifts end on the same day they started.
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="alert alert-warning">

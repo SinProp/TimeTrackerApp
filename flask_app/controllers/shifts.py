@@ -1041,6 +1041,7 @@ def stale_shifts():
 
     # Get stale shifts (default threshold: 12 hours)
     stale_shifts_list = Shift.get_stale_shifts(hours_threshold=12)
+    multiday_count = Shift.count_multiday_shifts()
 
     recommended_batch_sizes = [5, 25]
 
@@ -1050,6 +1051,7 @@ def stale_shifts():
         logged_in_user=logged_in_user,
         shift_count=len(stale_shifts_list),
         recommended_batch_sizes=recommended_batch_sizes,
+        multiday_count=multiday_count,
     )
 
 
@@ -1185,6 +1187,41 @@ def fix_negative_durations():
     except Exception as e:
         print(f"Error fixing negative duration shifts: {e}")
         flash("An error occurred while fixing shifts.", "danger")
+
+    return redirect("/admin/stale_shifts")
+
+
+@app.route("/admin/fix_multiday_shifts", methods=["POST"])
+def fix_multiday_shifts():
+    """
+    Fix all shifts where the end date is on a different day than the start date.
+    Corrects end time to 3:30 PM on the day the shift was started.
+    """
+    if "user_id" not in session:
+        return redirect("/logout")
+
+    user_data = {"id": session["user_id"]}
+    logged_in_user = User.get_by_id(user_data)
+
+    if logged_in_user.department != "ADMINISTRATIVE":
+        flash("Unauthorized access.", "danger")
+        return redirect("/dashboard")
+
+    try:
+        fixed_count = Shift.fix_multiday_shifts()
+        if fixed_count > 0:
+            flash(
+                f"Successfully corrected {fixed_count} multi-day shifts! End times set to 3:30 PM on the day they started.",
+                "success",
+            )
+        else:
+            flash(
+                "No multi-day shifts found. All shifts end on the same day they started.",
+                "info",
+            )
+    except Exception as e:
+        print(f"Error fixing multi-day shifts: {e}")
+        flash("An error occurred while fixing multi-day shifts.", "danger")
 
     return redirect("/admin/stale_shifts")
 

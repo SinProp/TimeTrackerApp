@@ -35,18 +35,20 @@ def auto_clock_out_shifts_at_6pm_weekdays():
 
 def auto_fix_stale_shifts():
     """
-    Automatically fix stale shifts (open >12 hours) from previous days.
+    Automatically fix stale shifts (open >12 hours) from previous days,
+    then correct any multi-day shifts (clocked out on a different day than started).
     Runs at 6:30 PM EST on weekdays, 30 minutes after same-day auto clock-out.
     """
     try:
         scheduler_logger.info(f"Starting stale shift cleanup at {datetime.now()}")
 
         fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
+        multiday_count = Shift.fix_multiday_shifts()
 
         scheduler_logger.info(
-            f"Stale shift cleanup completed. Fixed {fixed_count} shifts open >12 hours."
+            f"Stale shift cleanup completed. Fixed {fixed_count} stale shifts, corrected {multiday_count} multi-day shifts."
         )
-        return f"Fixed {fixed_count} stale shifts open >12 hours"
+        return f"Fixed {fixed_count} stale shifts, corrected {multiday_count} multi-day shifts"
 
     except Exception as e:
         scheduler_logger.error(f"Error in stale shift cleanup: {str(e)}")
