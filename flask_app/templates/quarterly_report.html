@@ -166,6 +166,39 @@
             font-size: 0.85rem;
             font-weight: 600;
         }
+        .possible-subtitle {
+            display: block;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .util-badge {
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .util-high { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+        .util-mid { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+        .util-low { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+        .util-over { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+        .util-na { background: #bdc3c7; }
+        .summary-row2 {
+            background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 0 0 10px 10px;
+            margin-top: -15px;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        .summary-row2 h5 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .capped-note {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            font-style: italic;
+        }
         .view-link {
             color: var(--primary-color);
             text-decoration: none;
@@ -222,11 +255,17 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            .time-badge {
+            .time-badge, .util-badge {
                 background: none !important;
                 color: black !important;
                 padding: 0 !important;
                 font-weight: bold;
+            }
+            .summary-row2 {
+                background: #ddd !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             .print-header {
                 display: block !important;
@@ -319,8 +358,8 @@
                 {% if department_data is defined and department_data %}
                 <div class="report-results">
 
-                    <!-- Summary bar -->
-                    <div class="report-summary">
+                    <!-- Summary bar — row 1: actual metrics -->
+                    <div class="report-summary" style="border-radius: 10px 10px 0 0; margin-bottom: 0;">
                         <div class="row text-center">
                             <div class="col-6 col-md-3">
                                 <h5><i class="fas fa-clock me-1"></i>{{ total_hours }}</h5>
@@ -337,6 +376,27 @@
                             <div class="col-6 col-md-3">
                                 <h5><i class="fas fa-calendar me-1"></i>{{ start_date }} &mdash; {{ end_date }}</h5>
                                 <small>Date Range</small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Summary bar — row 2: possible hours context -->
+                    <div class="summary-row2">
+                        <div class="row text-center">
+                            <div class="col-12 col-md-4">
+                                <h5><i class="fas fa-star me-1"></i>{{ total_possible_hours }}</h5>
+                                <small>Possible Hours (per employee)</small>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <h5><i class="fas fa-calendar-day me-1"></i>{{ workdays }} days</h5>
+                                <small>Workdays{% if end_was_capped %} <span class="capped-note">(through {{ capped_end }})</span>{% endif %}</small>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                {% if overall_utilization is not none %}
+                                <h5><i class="fas fa-chart-line me-1"></i>{{ overall_utilization }}%</h5>
+                                {% else %}
+                                <h5><i class="fas fa-chart-line me-1"></i>N/A</h5>
+                                {% endif %}
+                                <small>Avg Utilization</small>
                             </div>
                         </div>
                     </div>
@@ -369,7 +429,7 @@
                     {% for dept in department_data %}
                     <div class="dept-header">
                         <h6><i class="fas fa-building me-2"></i>{{ dept.department }} ({{ dept.employees|length }} employee{{ 's' if dept.employees|length != 1 }})</h6>
-                        <span class="dept-subtotal">Subtotal: {{ dept.total_hours_formatted }} &bull; {{ dept.shift_count }} shifts</span>
+                        <span class="dept-subtotal">Subtotal: {{ dept.total_hours_formatted }}{% if dept.possible_hours_formatted %} / {{ dept.possible_hours_formatted }}{% endif %} &bull; {{ dept.shift_count }} shifts{% if dept.utilization_pct is not none %} &bull; {{ dept.utilization_pct }}% util{% endif %}</span>
                     </div>
 
                     <div class="table-responsive">
@@ -380,6 +440,7 @@
                                     <th class="sortable" data-sort="name"><i class="fas fa-user me-1"></i>Employee <span class="sort-indicator">&#8693;</span></th>
                                     <th class="sortable" data-sort="shifts"><i class="fas fa-list me-1"></i>Shifts <span class="sort-indicator">&#8693;</span></th>
                                     <th class="sortable" data-sort="hours"><i class="fas fa-hourglass-half me-1"></i>Total Hours <span class="sort-indicator active">&#9660;</span></th>
+                                    <th class="sortable" data-sort="utilization"><i class="fas fa-chart-pie me-1"></i>Utilization <span class="sort-indicator">&#8693;</span></th>
                                     <th class="no-print"><i class="fas fa-eye me-1"></i>Detail</th>
                                 </tr>
                             </thead>
@@ -387,10 +448,31 @@
                                 {% for emp in dept.employees %}
                                 <tr data-name="{{ emp.user.first_name }} {{ emp.user.last_name }}"
                                     data-shifts="{{ emp.shift_count }}"
-                                    data-hours="{{ emp.total_seconds }}">
+                                    data-hours="{{ emp.total_seconds }}"
+                                    data-utilization="{{ emp.utilization_pct if emp.utilization_pct is not none else -1 }}">
                                     <td><strong>{{ emp.user.first_name }} {{ emp.user.last_name }}</strong></td>
                                     <td>{{ emp.shift_count }}</td>
-                                    <td><span class="time-badge">{{ emp.total_hours_formatted }}</span></td>
+                                    <td>
+                                        <span class="time-badge">{{ emp.total_hours_formatted }}</span>
+                                        {% if emp.possible_hours_formatted %}
+                                        <span class="possible-subtitle">/ {{ emp.possible_hours_formatted }} possible</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if emp.utilization_pct is not none %}
+                                            {% if emp.utilization_pct > 100 %}
+                                        <span class="util-badge util-over" aria-label="{{ emp.utilization_pct }} percent utilization">{{ emp.utilization_pct }}%</span>
+                                            {% elif emp.utilization_pct >= 80 %}
+                                        <span class="util-badge util-high" aria-label="{{ emp.utilization_pct }} percent utilization">{{ emp.utilization_pct }}%</span>
+                                            {% elif emp.utilization_pct >= 50 %}
+                                        <span class="util-badge util-mid" aria-label="{{ emp.utilization_pct }} percent utilization">{{ emp.utilization_pct }}%</span>
+                                            {% else %}
+                                        <span class="util-badge util-low" aria-label="{{ emp.utilization_pct }} percent utilization">{{ emp.utilization_pct }}%</span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="util-badge util-na" aria-label="Not applicable">N/A</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="no-print">
                                         <a href="{{ url_for('shift_report', start_date=start_date, end_date=end_date, employee_id=emp.user.id) }}"
                                            class="view-link"
@@ -465,6 +547,9 @@
                 } else if (sortKey === 'hours') {
                     aVal = parseFloat(a.dataset.hours);
                     bVal = parseFloat(b.dataset.hours);
+                } else if (sortKey === 'utilization') {
+                    aVal = parseFloat(a.dataset.utilization);
+                    bVal = parseFloat(b.dataset.utilization);
                 }
                 return isAsc ? aVal - bVal : bVal - aVal;
             });

@@ -11,7 +11,13 @@ from flask import (
 from flask_app import app
 from flask_app.models.job import Job
 from flask_app.models.user import User
-from flask_app.models.shift import Shift, format_seconds_as_hms
+from flask_app.models.shift import (
+    Shift,
+    format_seconds_as_hms,
+    count_workdays,
+    enrich_with_possible_hours,
+    HOURS_PER_WORKDAY,
+)
 from datetime import datetime, timedelta, timezone
 import csv
 import io
@@ -335,12 +341,28 @@ def quarterly_report():
 
         shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
         employee_data = Shift.group_shifts_by_employee(shifts)
+
+        # Enrich with possible hours + utilization %
+        workdays, capped_end = count_workdays(start_date, end_date)
+        enrich_with_possible_hours(employee_data, workdays)
+
         department_data = Shift.group_by_department(employee_data)
 
         # Calculate grand totals
         total_seconds = sum(e["total_seconds"] for e in employee_data)
         total_shifts = sum(e["shift_count"] for e in employee_data)
         total_hours_formatted = format_seconds_as_hms(total_seconds)
+
+        # Possible hours grand totals (per-employee baseline)
+        possible_seconds = workdays * HOURS_PER_WORKDAY * 3600
+        total_possible_formatted = format_seconds_as_hms(possible_seconds)
+        overall_utilization = None
+        if possible_seconds > 0 and employee_data:
+            avg_seconds = total_seconds / len(employee_data)
+            overall_utilization = round(avg_seconds / possible_seconds * 100, 1)
+
+        # Did we cap the end date at today?
+        end_was_capped = capped_end < end_date
 
         # Get filtered employee name for header
         filtered_employee_name = None
@@ -360,6 +382,11 @@ def quarterly_report():
             current_year=current_year,
             employee_id=employee_id,
             filtered_employee_name=filtered_employee_name,
+            total_possible_hours=total_possible_formatted,
+            workdays=workdays,
+            overall_utilization=overall_utilization,
+            end_was_capped=end_was_capped,
+            capped_end=capped_end.strftime("%m/%d/%Y") if end_was_capped else None,
         )
 
     return render_template(
@@ -419,6 +446,10 @@ def quarterly_report_csv():
     shifts = Shift.find_shifts_in_date_range(data, employee_id=employee_id)
     employee_data = Shift.group_shifts_by_employee(shifts)
 
+    # Enrich with possible hours for CSV
+    workdays, _ = count_workdays(start_date, end_date)
+    enrich_with_possible_hours(employee_data, workdays)
+
     # Sanitize cell values to prevent CSV/Excel formula injection.
     # Values starting with =, +, -, @ are interpreted as formulas by Excel.
     def sanitize_csv_cell(val):
@@ -431,15 +462,32 @@ def quarterly_report_csv():
     output = io.StringIO()
     output.write("\ufeff")  # UTF-8 BOM for Excel
     writer = csv.writer(output)
-    writer.writerow(["Employee", "Department", "Total Shifts", "Total Hours"])
+    writer.writerow(
+        [
+            "Employee",
+            "Department",
+            "Total Shifts",
+            "Total Hours",
+            "Possible Hours",
+            "Utilization %",
+        ]
+    )
 
     for emp in employee_data:
+        util_display = (
+            f"{emp['utilization_pct']}%"
+            if emp["utilization_pct"] is not None
+            else "N/A"
+        )
+        possible_display = emp.get("possible_hours_formatted", "N/A") or "N/A"
         writer.writerow(
             [
                 sanitize_csv_cell(f"{emp['user'].first_name} {emp['user'].last_name}"),
                 sanitize_csv_cell(emp["user"].department),
                 emp["shift_count"],
                 emp["total_hours_formatted"],
+                possible_display,
+                util_display,
             ]
         )
 

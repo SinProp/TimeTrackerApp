@@ -4,9 +4,11 @@ from ..models import user, job
 from collections import defaultdict
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 dateFormat = "%m/%d/%Y %I:%M %p"
+
+HOURS_PER_WORKDAY = 6.5
 
 
 def format_seconds_as_hms(total_seconds):
@@ -14,6 +16,53 @@ def format_seconds_as_hms(total_seconds):
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
+
+
+def count_workdays(start_date, end_date):
+    """
+    Count weekdays (Mon-Fri) between start_date and end_date (inclusive).
+    Caps end_date at today to avoid counting future days.
+
+    Args:
+        start_date: date object
+        end_date: date object
+
+    Returns:
+        tuple: (workdays: int, capped_end: date)
+    """
+    today = date.today()
+    capped_end = min(end_date, today)
+    if capped_end < start_date:
+        return (0, capped_end)
+    count = 0
+    current = start_date
+    while current <= capped_end:
+        if current.weekday() < 5:  # Mon=0 .. Fri=4
+            count += 1
+        current += timedelta(days=1)
+    return (count, capped_end)
+
+
+def enrich_with_possible_hours(employee_data, workdays):
+    """
+    Add possible_seconds, possible_hours_formatted, and utilization_pct
+    to each employee dict in place.
+
+    Args:
+        employee_data: list of dicts from group_shifts_by_employee()
+        workdays: int — number of workdays in the range
+    """
+    possible_seconds = workdays * HOURS_PER_WORKDAY * 3600
+    possible_formatted = format_seconds_as_hms(possible_seconds)
+    for emp in employee_data:
+        emp["possible_seconds"] = possible_seconds
+        emp["possible_hours_formatted"] = possible_formatted
+        if possible_seconds > 0:
+            emp["utilization_pct"] = round(
+                emp["total_seconds"] / possible_seconds * 100, 1
+            )
+        else:
+            emp["utilization_pct"] = None
 
 
 class Shift:
@@ -211,6 +260,7 @@ class Shift:
                 "employees": [],
                 "total_seconds": 0,
                 "shift_count": 0,
+                "possible_seconds": 0,
             }
         )
 
@@ -219,11 +269,22 @@ class Shift:
             dept_map[dept]["employees"].append(emp)
             dept_map[dept]["total_seconds"] += emp["total_seconds"]
             dept_map[dept]["shift_count"] += emp["shift_count"]
+            dept_map[dept]["possible_seconds"] += emp.get("possible_seconds", 0)
 
         result = []
         for dept_name, data in dept_map.items():
             data["department"] = dept_name
             data["total_hours_formatted"] = format_seconds_as_hms(data["total_seconds"])
+            if data["possible_seconds"] > 0:
+                data["possible_hours_formatted"] = format_seconds_as_hms(
+                    data["possible_seconds"]
+                )
+                data["utilization_pct"] = round(
+                    data["total_seconds"] / data["possible_seconds"] * 100, 1
+                )
+            else:
+                data["possible_hours_formatted"] = None
+                data["utilization_pct"] = None
             # Ensure employees sorted by hours descending within each department
             data["employees"].sort(key=lambda x: x["total_seconds"], reverse=True)
             result.append(data)
