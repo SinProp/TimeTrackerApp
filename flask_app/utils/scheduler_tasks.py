@@ -3,55 +3,58 @@ from flask_app.models.shift import Shift
 from datetime import datetime
 import logging
 
-# Set up logging for scheduler
-# StreamHandler ensures output reaches gunicorn's error log (not just root logger)
-scheduler_logger = logging.getLogger("scheduler")
-scheduler_logger.setLevel(logging.INFO)
-if not scheduler_logger.handlers:
-    scheduler_logger.addHandler(logging.StreamHandler())
+def get_scheduler_logger():
+    """
+    Route scheduler logs into Gunicorn's persisted error log when available.
+    """
+    scheduler_logger = logging.getLogger("scheduler")
+    if getattr(scheduler_logger, "_island_configured", False):
+        return scheduler_logger
+
+    gunicorn_error_logger = logging.getLogger("gunicorn.error")
+    if gunicorn_error_logger.handlers:
+        scheduler_logger.handlers = []
+        for handler in gunicorn_error_logger.handlers:
+            scheduler_logger.addHandler(handler)
+        scheduler_logger.setLevel(gunicorn_error_logger.level or logging.INFO)
+        scheduler_logger.propagate = False
+    else:
+        scheduler_logger.setLevel(logging.INFO)
+        if not scheduler_logger.handlers:
+            scheduler_logger.addHandler(logging.StreamHandler())
+
+    scheduler_logger._island_configured = True
+    return scheduler_logger
 
 
-def auto_clock_out_shifts_at_6pm_weekdays():
+scheduler_logger = get_scheduler_logger()
+
+
+def run_weekday_shift_remediation():
     """
-    Automatically close open shifts at 6:00 PM EST on weekdays.
-    End times are mapped to 3:30 PM baseline when possible.
+    Run the complete weekday shift remediation pass at 6:00 PM EST.
     """
+    logger = get_scheduler_logger()
     try:
-        scheduler_logger.info(
-            f"Starting weekday 6:00 PM auto clock-out at {datetime.now()}"
+        logger.info(
+            "SHIFT_REMEDIATION_START at=%s",
+            datetime.now().isoformat(timespec="seconds"),
         )
 
-        closed_count = Shift.auto_clock_out_open_shifts_created_today()
+        summary = Shift.run_weekday_shift_remediation()
 
-        scheduler_logger.info(
-            f"Weekday 6:00 PM auto close completed. Closed {closed_count} shifts using 3:30 PM mapping."
+        logger.info(
+            "SHIFT_REMEDIATION_COMPLETE at=%s today_closed=%s older_open_closed=%s multiday_corrected=%s total_affected=%s",
+            datetime.now().isoformat(timespec="seconds"),
+            summary["today_closed"],
+            summary["older_open_closed"],
+            summary["multiday_corrected"],
+            summary["total_affected"],
         )
-        return f"Closed {closed_count} open shifts at 6:00 PM using 3:30 PM mapping"
+        return summary
 
     except Exception as e:
-        scheduler_logger.error(f"Error in weekday 6:00 PM auto clock-out: {str(e)}")
-        return f"Error: {str(e)}"
-
-
-def auto_fix_stale_shifts():
-    """
-    Automatically fix stale shifts (open >12 hours) from previous days,
-    then correct any multi-day shifts (clocked out on a different day than started).
-    Runs at 6:30 PM EST on weekdays, 30 minutes after same-day auto clock-out.
-    """
-    try:
-        scheduler_logger.info(f"Starting stale shift cleanup at {datetime.now()}")
-
-        fixed_count = Shift.fix_all_stale_shifts(hours_threshold=12)
-        multiday_count = Shift.fix_multiday_shifts()
-
-        scheduler_logger.info(
-            f"Stale shift cleanup completed. Fixed {fixed_count} stale shifts, corrected {multiday_count} multi-day shifts."
-        )
-        return f"Fixed {fixed_count} stale shifts, corrected {multiday_count} multi-day shifts"
-
-    except Exception as e:
-        scheduler_logger.error(f"Error in stale shift cleanup: {str(e)}")
+        logger.error("SHIFT_REMEDIATION_ERROR at=%s error=%s", datetime.now(), str(e))
         return f"Error: {str(e)}"
 
 
@@ -66,17 +69,18 @@ def automated_job_sync():
     - If job exists (by IM number): Update it and make visible to production
     - If job is new: Insert it with visible_to_production=TRUE
     """
+    logger = get_scheduler_logger()
     try:
-        scheduler_logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
+        logger.info(f"Starting automated Dataverse sync at {datetime.now()}")
 
         # Get approved jobs from Dataverse
         approved_jobs = Job.get_approved_jobs_from_dataverse()
-        scheduler_logger.info(
+        logger.info(
             f"Retrieved {len(approved_jobs)} approved jobs from Dataverse"
         )
 
         if not approved_jobs:
-            scheduler_logger.info("No approved jobs to process")
+            logger.info("No approved jobs to process")
             return "Sync completed. No approved jobs found in Dataverse."
 
         # OPTIMIZED: Check all IM numbers in one query instead of N queries
@@ -99,11 +103,11 @@ def automated_job_sync():
                         },
                     )
                     updated_count += 1
-                    scheduler_logger.info(
+                    logger.info(
                         f"Updated existing job IM #{job['im_number']} from Dataverse"
                     )
                 except Exception as e:
-                    scheduler_logger.error(
+                    logger.error(
                         f"Error updating job {job['im_number']}: {e}"
                     )
             else:
@@ -112,16 +116,16 @@ def automated_job_sync():
 
         # Log which new jobs are being processed
         for job in new_jobs:
-            scheduler_logger.info(f"Adding new job with IM number: {job['im_number']}")
+            logger.info(f"Adding new job with IM number: {job['im_number']}")
 
         # OPTIMIZED: Insert all new jobs in one query instead of N queries
         added_count = Job.bulk_add_records(new_jobs) if new_jobs else 0
 
-        scheduler_logger.info(
+        logger.info(
             f"Dataverse sync completed. Added: {added_count}, Updated: {updated_count}"
         )
         return f"Sync completed successfully. Added {added_count} jobs, updated {updated_count} existing jobs."
 
     except Exception as e:
-        scheduler_logger.error(f"Error in automated Dataverse sync: {str(e)}")
+        logger.error(f"Error in automated Dataverse sync: {str(e)}")
         return f"Error: {str(e)}"
