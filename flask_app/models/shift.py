@@ -69,6 +69,7 @@ def enrich_with_possible_hours(employee_data, workdays):
 
 class Shift:
     db_name = "man_hours"
+    AUTO_END_TIME = "15:30:00"
 
     def __init__(self, db_data):
         self.id = db_data["id"]
@@ -549,28 +550,7 @@ class Shift:
         Returns:
             Number of shifts clocked out.
         """
-        count_query = """
-            SELECT COUNT(*) as count FROM shifts
-            WHERE updated_at IS NULL
-            AND DATE(created_at) = CURDATE();
-        """
-        count_result = connectToMySQL(cls.db_name).query_db(count_query)
-        count = count_result[0]["count"] if count_result else 0
-
-        if count > 0:
-            query = """
-                UPDATE shifts
-                SET updated_at = CASE
-                    WHEN TIME(created_at) < '15:30:00'
-                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
-                    ELSE created_at
-                END
-                WHERE updated_at IS NULL
-                AND DATE(created_at) = CURDATE();
-            """
-            connectToMySQL(cls.db_name).query_db(query)
-
-        return count
+        return cls._close_open_shifts_where("DATE(created_at) = CURDATE()")
 
     @classmethod
     def auto_end_open_shifts_at_330pm(cls):
@@ -692,6 +672,108 @@ class Shift:
         return stale_shifts
 
     @classmethod
+    def normalized_end_time(cls, created_at):
+        """
+        Return the normalized same-day end time used by all remediation paths.
+
+        - If shift started BEFORE 3:30 PM: end at 3:30 PM same day
+        - If shift started AT or AFTER 3:30 PM: end at start time (0 duration)
+        """
+        cutoff = created_at.replace(hour=15, minute=30, second=0, microsecond=0)
+        if created_at.time() < cutoff.time():
+            return cutoff
+        return created_at
+
+    @classmethod
+    def _normalized_end_time_sql(cls, column_name="created_at"):
+        """
+        Shared SQL fragment for the normalized same-day end time rule.
+        """
+        return f"""CASE
+                WHEN TIME({column_name}) < '{cls.AUTO_END_TIME}'
+                THEN DATE_FORMAT({column_name}, '%%Y-%%m-%%d {cls.AUTO_END_TIME}')
+                ELSE {column_name}
+            END"""
+
+    @classmethod
+    def _count_rows(cls, where_clause, data=None):
+        query = f"""
+            SELECT COUNT(*) as count FROM shifts
+            WHERE {where_clause};
+        """
+        result = connectToMySQL(cls.db_name).query_db(query, data)
+        return result[0]["count"] if result else 0
+
+    @classmethod
+    def _close_open_shifts_where(cls, extra_where_clause="", data=None, limit=None):
+        """
+        Close open shifts using the shared normalized end-time rule.
+        """
+        where_parts = ["updated_at IS NULL"]
+        if extra_where_clause:
+            where_parts.append(extra_where_clause)
+        where_clause = "\n                AND ".join(where_parts)
+
+        count = cls._count_rows(where_clause, data)
+        if count == 0:
+            return 0
+
+        order_limit_sql = ""
+        if limit is not None:
+            order_limit_sql = (
+                f"\n            ORDER BY created_at ASC\n            LIMIT {int(limit)}"
+            )
+        query = f"""
+            UPDATE shifts
+            SET updated_at = {cls._normalized_end_time_sql("created_at")}
+            WHERE {where_clause}
+            {order_limit_sql};
+        """
+        connectToMySQL(cls.db_name).query_db(query, data)
+        return count if limit is None else min(count, int(limit))
+
+    @classmethod
+    def _count_multiday_shifts_where(cls):
+        return cls._count_rows(
+            "updated_at IS NOT NULL AND DATE(updated_at) != DATE(created_at)"
+        )
+
+    @classmethod
+    def _fix_multiday_shifts_where(cls):
+        count = cls._count_multiday_shifts_where()
+        if count == 0:
+            return 0
+
+        query = f"""
+            UPDATE shifts
+            SET updated_at = {cls._normalized_end_time_sql("created_at")}
+            WHERE updated_at IS NOT NULL
+            AND DATE(updated_at) != DATE(created_at);
+        """
+        connectToMySQL(cls.db_name).query_db(query)
+        return count
+
+    @classmethod
+    def run_weekday_shift_remediation(cls):
+        """
+        Close today's open shifts, sweep older missed open shifts,
+        and correct any multi-day shifts in one idempotent pass.
+
+        Returns:
+            dict: remediation counts keyed by scope
+        """
+        today_closed = cls._close_open_shifts_where("DATE(created_at) = CURDATE()")
+        older_open_closed = cls._close_open_shifts_where("DATE(created_at) < CURDATE()")
+        multiday_corrected = cls._fix_multiday_shifts_where()
+
+        return {
+            "today_closed": today_closed,
+            "older_open_closed": older_open_closed,
+            "multiday_corrected": multiday_corrected,
+            "total_affected": today_closed + older_open_closed + multiday_corrected,
+        }
+
+    @classmethod
     def fix_stale_shift(cls, shift_id):
         """
         Fix a single stale shift by setting its updated_at appropriately.
@@ -707,17 +789,8 @@ class Shift:
         Returns:
             True if successful, False otherwise
         """
-        query = """
-            UPDATE shifts
-            SET updated_at = CASE
-                WHEN TIME(created_at) < '15:30:00'
-                THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
-                ELSE created_at
-            END
-            WHERE id = %(shift_id)s AND updated_at IS NULL;
-        """
-        result = connectToMySQL(cls.db_name).query_db(query, {"shift_id": shift_id})
-        return result is not False
+        count = cls._close_open_shifts_where("id = %(shift_id)s", {"shift_id": shift_id})
+        return count > 0
 
     @classmethod
     def fix_all_stale_shifts(cls, hours_threshold=12):
@@ -735,49 +808,20 @@ class Shift:
         Returns:
             Number of shifts fixed
         """
-        # Count how many shifts will be fixed BEFORE updating
-        # (ROW_COUNT() doesn't work across separate connections)
-        count_query = """
-            SELECT COUNT(*) as count FROM shifts
-            WHERE updated_at IS NULL
-            AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
-        """
-        count_result = connectToMySQL(cls.db_name).query_db(
-            count_query, {"hours_threshold": hours_threshold}
+        return cls._close_open_shifts_where(
+            "TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s",
+            {"hours_threshold": hours_threshold},
         )
-        count = count_result[0]["count"] if count_result else 0
-
-        if count > 0:
-            query = """
-                UPDATE shifts
-                SET updated_at = CASE
-                    WHEN TIME(created_at) < '15:30:00'
-                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
-                    ELSE created_at
-                END
-                WHERE updated_at IS NULL
-                AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
-            """
-            connectToMySQL(cls.db_name).query_db(
-                query, {"hours_threshold": hours_threshold}
-            )
-
-        return count
 
     @classmethod
     def count_stale_shifts(cls, hours_threshold=12):
         """
         Count open stale shifts older than the configured threshold.
         """
-        count_query = """
-            SELECT COUNT(*) as count FROM shifts
-            WHERE updated_at IS NULL
-            AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s;
-        """
-        count_result = connectToMySQL(cls.db_name).query_db(
-            count_query, {"hours_threshold": hours_threshold}
+        return cls._count_rows(
+            "updated_at IS NULL AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s",
+            {"hours_threshold": hours_threshold},
         )
-        return count_result[0]["count"] if count_result else 0
 
     @classmethod
     def fix_stale_shifts_batch(cls, batch_size=10, hours_threshold=12):
@@ -795,27 +839,11 @@ class Shift:
         if batch_size <= 0:
             return 0
 
-        stale_count = cls.count_stale_shifts(hours_threshold=hours_threshold)
-        target_count = min(batch_size, stale_count)
-
-        if target_count > 0:
-            query = f"""
-                UPDATE shifts
-                SET updated_at = CASE
-                    WHEN TIME(created_at) < '15:30:00'
-                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
-                    ELSE created_at
-                END
-                WHERE updated_at IS NULL
-                AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s
-                ORDER BY created_at ASC
-                LIMIT {int(target_count)};  -- int() cast guards copy-paste reuse
-            """
-            connectToMySQL(cls.db_name).query_db(
-                query, {"hours_threshold": hours_threshold}
-            )
-
-        return target_count
+        return cls._close_open_shifts_where(
+            "TIMESTAMPDIFF(HOUR, created_at, NOW()) >= %(hours_threshold)s",
+            {"hours_threshold": hours_threshold},
+            limit=batch_size,
+        )
 
     @classmethod
     def fix_negative_duration_shifts(cls):
@@ -859,13 +887,7 @@ class Shift:
         Count shifts where updated_at is on a different day than created_at.
         These are shifts that were clocked out days later instead of on the same day.
         """
-        query = """
-            SELECT COUNT(*) as count FROM shifts
-            WHERE updated_at IS NOT NULL
-            AND DATE(updated_at) != DATE(created_at);
-        """
-        result = connectToMySQL(cls.db_name).query_db(query)
-        return result[0]["count"] if result else 0
+        return cls._count_multiday_shifts_where()
 
     @classmethod
     def get_multiday_shifts(cls):
@@ -899,19 +921,4 @@ class Shift:
         Returns:
             Number of shifts fixed
         """
-        count = cls.count_multiday_shifts()
-
-        if count > 0:
-            query = """
-                UPDATE shifts
-                SET updated_at = CASE
-                    WHEN TIME(created_at) < '15:30:00'
-                    THEN DATE_FORMAT(created_at, '%%Y-%%m-%%d 15:30:00')
-                    ELSE created_at
-                END
-                WHERE updated_at IS NOT NULL
-                AND DATE(updated_at) != DATE(created_at);
-            """
-            connectToMySQL(cls.db_name).query_db(query)
-
-        return count
+        return cls._fix_multiday_shifts_where()

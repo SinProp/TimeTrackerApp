@@ -14,6 +14,24 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: Validate required secrets
+              env:
+                  EC2_HOST: ${{ secrets.EC2_HOST }}
+                  EC2_USER: ${{ secrets.EC2_USER }}
+                  EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+              run: |
+                  set -euo pipefail
+
+                  missing=()
+                  [ -z "${EC2_HOST:-}" ] && missing+=("EC2_HOST")
+                  [ -z "${EC2_USER:-}" ] && missing+=("EC2_USER")
+                  [ -z "${EC2_SSH_KEY:-}" ] && missing+=("EC2_SSH_KEY")
+
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing required secrets: ${missing[*]}"
+                    exit 1
+                  fi
+
             - name: Checkout
               uses: actions/checkout@v4
 
@@ -43,7 +61,7 @@ jobs:
                     source .env
                     set +a
 
-                    OPEN_COUNT=$(MYSQL_PWD="$MYSQL_PASSWORD" mysql -h"${MYSQL_HOST:-localhost}" -u"${MYSQL_USER:-root}" -D man_hours -N -e "SELECT COUNT(*) FROM shifts WHERE updated_at IS NULL AND DATE(created_at)=CURDATE();")
+                    OPEN_COUNT=$(MYSQL_PWD="$MYSQL_PASSWORD" mysql -h"${MYSQL_HOST:-localhost}" -u"${MYSQL_USER:-root}" -D man_hours -N -e "SELECT COUNT(*) FROM shifts WHERE updated_at IS NULL AND (DATE(created_at) < CURDATE() OR (DATE(created_at)=CURDATE() AND TIME(created_at) < '18:00:00'));")
 
                     LOCK_OK="NO"
                     if [ -f /tmp/island_time_scheduler.lock ] && lsof /tmp/island_time_scheduler.lock 2>/dev/null | grep -q gunicorn; then
@@ -53,7 +71,7 @@ jobs:
                     HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --unix-socket /home/ubuntu/TimeTrackerApp/Island_Time.sock http://localhost/ || echo "000")
 
                     TODAY=$(TZ=America/New_York date +%Y-%m-%d)
-                    if grep -q "$TODAY" gunicorn_error.log && grep -q "Weekday 6:00 PM auto clock-out completed" gunicorn_error.log; then
+                    if grep -h "$TODAY" gunicorn_error.log server.log 2>/dev/null | grep -q "SHIFT_REMEDIATION_COMPLETE"; then
                       FIRED="YES"
                     else
                       FIRED="NO"
@@ -73,10 +91,13 @@ jobs:
                     elif [ "$HEALTH" != "200" ]; then
                       VERDICT="FAIL"
                       REASON="App health check not 200"
+                    elif [ "$FIRED" != "YES" ]; then
+                      VERDICT="FAIL"
+                      REASON="Shift remediation summary log missing for today"
                     elif [ "$DOW_ET" -ge 1 ] && [ "$DOW_ET" -le 5 ] && { [ "$HOUR_ET" -gt 18 ] || { [ "$HOUR_ET" -eq 18 ] && [ "$MIN_ET" -ge 10 ]; }; }; then
                       if [ "$OPEN_COUNT" != "0" ]; then
                         VERDICT="FAIL"
-                        REASON="Open shifts still present after 6 PM ET"
+                        REASON="Unremediated shifts created before 6 PM ET still open"
                       fi
                     else
                       REASON="Pre-6PM ET window; structural checks only"
@@ -128,7 +149,7 @@ jobs:
                   END="<!-- SCHEDULER_HISTORY_END -->"
 
                   if ! printf '%s' "$BODY" | grep -q "$START"; then
-                    HISTORY='| ET Timestamp | Fired | Open Today | Lock | Health | Verdict | Reason |\n|---|---|---:|---|---|---|---|'
+                    HISTORY='| ET Timestamp | Fired | Open <=6PM | Lock | Health | Verdict | Reason |\n|---|---|---:|---|---|---|---|'
                   else
                     HISTORY=$(printf '%s' "$BODY" | awk "/$START/{flag=1;next}/$END/{flag=0}flag")
                   fi
@@ -153,7 +174,7 @@ jobs:
                   {
                     echo "## Rolling Scheduler Verification"
                     echo
-                    echo "Single-issue weekday verification log for production scheduler health and 6 PM clock-out behavior."
+                    echo "Single-issue weekday verification log for production scheduler health and 6 PM shift remediation behavior."
                     echo
                     echo "### Trend (Pass=1, Fail=0)"
                     echo

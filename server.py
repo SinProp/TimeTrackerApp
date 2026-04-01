@@ -9,8 +9,8 @@ load_dotenv()  # Must be called before any flask_app imports
 
 from flask_app.utils.scheduler_tasks import (
     automated_job_sync,
-    auto_clock_out_shifts_at_6pm_weekdays,
-    auto_fix_stale_shifts,
+    get_scheduler_logger,
+    run_weekday_shift_remediation,
 )
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -28,7 +28,7 @@ from flask_app import app
 
 # setup_webhook(sheet_id='YOUR_SHEET_ID', callback_url='YOUR_CALLBACK_URL')
 
-scheduler_logger = logging.getLogger("scheduler")
+scheduler_logger = get_scheduler_logger()
 _scheduler = None
 _scheduler_lock_file = None
 
@@ -107,20 +107,10 @@ def start_scheduler_if_enabled():
     )
 
     scheduler.add_job(
-        func=auto_clock_out_shifts_at_6pm_weekdays,
+        func=run_weekday_shift_remediation,
         trigger=CronTrigger(day_of_week="mon-fri", hour=18, minute=0, timezone=eastern),
-        id="weekday_auto_clock_out_shifts",
-        name="Weekday Auto Clock-Out Shifts at 6:00 PM",
-        replace_existing=True,
-    )
-
-    scheduler.add_job(
-        func=auto_fix_stale_shifts,
-        trigger=CronTrigger(
-            day_of_week="mon-fri", hour=18, minute=30, timezone=eastern
-        ),
-        id="auto_fix_stale_shifts",
-        name="Auto Fix Stale Shifts (>12 hrs open)",
+        id="weekday_shift_remediation",
+        name="Weekday Shift Remediation at 6:00 PM",
         replace_existing=True,
     )
 
@@ -131,7 +121,7 @@ def start_scheduler_if_enabled():
     atexit.register(_shutdown_scheduler)
 
     scheduler_logger.info(
-        "Scheduler started with daily 6AM sync, weekday 6PM auto clock-out, and 6:30PM stale shift cleanup"
+        "Scheduler started with daily 6AM sync and weekday 6PM shift remediation"
     )
     return True
 
